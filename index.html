@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Athens · Our Trip</title>
+<meta name="description" content="Our Athens trip map — best attractions, bars and vegan-friendly restaurants near Plateia Eleftherias, with live location and Google ratings." />
+
+<!-- ============================================================= -->
+<!--  STEP 1 of 2 — PASTE YOUR GOOGLE MAPS API KEY BELLOW           -->
+<!--  Replace the text YOUR_GOOGLE_MAPS_API_KEY (keep the quotes).  -->
+<!--  Full click-by-click instructions are in SETUP.md             -->
+<!-- ============================================================= -->
+<script>
+  window.GOOGLE_MAPS_API_KEY = "AIzaSyD7QkfZhMDvzUyRiyN-n8h_vxZHFBGJjtg";
+</script>
+<!-- ============================================================= -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --sea:#0e5a8a; --sea-2:#1e88c7;
+    --ink:#15293a; --muted:#5c7488; --line:#e4ecf2;
+    --bg:#f4f9fc; --card:#ffffff;
+    --attraction:#2d7dd2; --restaurant:#2e9e5b; --bar:#8e44ad; --home:#e8772e;
+    --gold:#f2b01e; --shadow:0 6px 24px rgba(16,46,72,.12);
+    --r:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:'Inter',system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    color:var(--ink); background:var(--bg); -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--sea)}
+
+  /* ---------- App shell ---------- */
+  .app{display:grid; grid-template-rows:auto 1fr; height:100%;}
+  header.top{
+    background:linear-gradient(115deg,#0e5a8a,#1e88c7);
+    color:#fff; padding:14px 20px; display:flex; align-items:center; gap:16px;
+    box-shadow:0 2px 14px rgba(10,60,110,.25); z-index:30;
+  }
+  header.top .brand{display:flex; flex-direction:column; line-height:1.1}
+  header.top h1{font-family:'Playfair Display',serif; font-weight:800; font-size:24px; margin:0; letter-spacing:.2px}
+  header.top .sub{font-size:12.5px; opacity:.92; margin-top:3px}
+  header.top .sub b{font-weight:600}
+  header.top .spacer{flex:1}
+  header.top .help{
+    background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.3);
+    padding:8px 13px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;
+  }
+  header.top .help:hover{background:rgba(255,255,255,.26)}
+
+  .main{display:grid; grid-template-columns:392px 1fr; min-height:0;}
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{display:flex; flex-direction:column; min-height:0; background:var(--bg); border-right:1px solid var(--line);}
+  .controls{padding:14px 16px 10px; border-bottom:1px solid var(--line); background:var(--card);}
+  .search{
+    width:100%; padding:11px 14px 11px 38px; border:1px solid var(--line); border-radius:12px;
+    font-size:14px; background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235c7488' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") no-repeat 13px center;
+  }
+  .search:focus{outline:none; border-color:var(--sea-2); box-shadow:0 0 0 3px rgba(30,136,199,.15)}
+  .chips{display:flex; gap:8px; margin-top:11px; flex-wrap:wrap}
+  .chip{
+    border:1px solid var(--line); background:#fff; color:var(--muted); font-size:13px; font-weight:600;
+    padding:7px 12px; border-radius:999px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    transition:.15s;
+  }
+  .chip .dot{width:9px;height:9px;border-radius:50%}
+  .chip[aria-pressed="true"]{color:#fff; border-color:transparent}
+  .chip[data-cat="all"][aria-pressed="true"]{background:var(--ink)}
+  .chip[data-cat="attraction"][aria-pressed="true"]{background:var(--attraction)}
+  .chip[data-cat="restaurant"][aria-pressed="true"]{background:var(--restaurant)}
+  .chip[data-cat="bar"][aria-pressed="true"]{background:var(--bar)}
+  .toggles{display:flex; gap:8px; margin-top:9px; flex-wrap:wrap}
+  .toggle{
+    font-size:12.5px; font-weight:600; color:var(--muted); border:1px dashed var(--line); background:#fff;
+    padding:6px 11px; border-radius:999px; cursor:pointer;
+  }
+  .toggle[aria-pressed="true"]{color:var(--sea); border-style:solid; border-color:var(--sea-2); background:#eef7fd}
+  .countline{font-size:12px; color:var(--muted); padding:9px 16px 0}
+
+  .list{overflow-y:auto; padding:8px 12px 24px; min-height:0; flex:1}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 13px; margin-bottom:10px;
+    cursor:pointer; transition:.15s; position:relative;
+  }
+  .card:hover{box-shadow:var(--shadow); transform:translateY(-1px); border-color:#d4e4ef}
+  .card.active{border-color:var(--sea-2); box-shadow:0 0 0 3px rgba(30,136,199,.15)}
+  .card .ttl{display:flex; align-items:flex-start; gap:9px}
+  .card .cdot{width:11px;height:11px;border-radius:50%; margin-top:5px; flex:none}
+  .card h3{font-size:15px; margin:0; font-weight:700; line-height:1.25}
+  .card .meta{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:5px 0 0 20px; font-size:12.5px; color:var(--muted)}
+  .card .blurb{font-size:12.8px; color:#3f586c; margin:7px 0 0 20px; line-height:1.45}
+  .badge{font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; letter-spacing:.2px}
+  .badge.veg{background:#e7f6ec; color:#1f7a44}
+  .badge.opt{background:#eef7e9; color:#5b7a2e}
+  .badge.view{background:#fff3df; color:#a76a12}
+  .badge.ride{background:#eef1f5; color:#5c7488}
+  .badge.price{background:#f1f5f8; color:#41607a; font-weight:600}
+  .rate{display:inline-flex; align-items:center; gap:4px; font-weight:700; color:#234; font-size:12.5px}
+  .rate .stars{color:var(--gold); letter-spacing:1px}
+  .rate .cnt{color:var(--muted); font-weight:500}
+  .rate.loading{color:#aab8c4; font-weight:500}
+
+  /* ---------- Map ---------- */
+  .mapwrap{position:relative; min-height:0}
+  #map{width:100%; height:100%}
+  .fab{
+    position:absolute; right:14px; bottom:24px; z-index:6; width:48px; height:48px; border-radius:50%;
+    background:#fff; border:none; box-shadow:var(--shadow); cursor:pointer; display:grid; place-items:center;
+  }
+  .fab:hover{background:#f3f8fb}
+  .fab svg{width:23px;height:23px; stroke:var(--sea); fill:none; stroke-width:2}
+  .fab.on svg{stroke:#fff} .fab.on{background:var(--sea)}
+  .legend{
+    position:absolute; left:14px; bottom:14px; z-index:5; background:rgba(255,255,255,.94); backdrop-filter:blur(6px);
+    border:1px solid var(--line); border-radius:12px; padding:9px 12px; font-size:12px; color:var(--ink); box-shadow:var(--shadow);
+  }
+  .legend div{display:flex; align-items:center; gap:7px; margin:2px 0}
+  .legend .d{width:10px;height:10px;border-radius:50%}
+
+  /* ---------- Detail panel ---------- */
+  .detail{
+    position:absolute; top:14px; left:14px; width:360px; max-height:calc(100% - 28px); z-index:12;
+    background:var(--card); border-radius:var(--r); box-shadow:0 18px 50px rgba(10,40,70,.3);
+    display:flex; flex-direction:column; overflow:hidden;
+    transform:translateX(-16px); opacity:0; visibility:hidden; pointer-events:none;
+    transition:transform .28s cubic-bezier(.2,.8,.2,1), opacity .22s ease, visibility 0s linear .28s;
+  }
+  .detail.open{transform:translateX(0); opacity:1; visibility:visible; pointer-events:auto;
+    transition:transform .28s cubic-bezier(.2,.8,.2,1), opacity .22s ease, visibility 0s;}
+  .detail .hero{height:158px; background:#dde7ee center/cover no-repeat; position:relative; flex:none}
+  .detail .hero .noimg{height:100%; display:grid; place-items:center; color:#9fb3c2; font-size:13px}
+  .detail .close{position:absolute; top:10px; right:10px; width:32px;height:32px;border-radius:50%; border:none; background:rgba(0,0,0,.5); color:#fff; font-size:17px; cursor:pointer}
+  .detail .body{padding:15px 16px 18px; overflow-y:auto; flex:1; min-height:0}
+  .detail .catpill{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; padding:3px 9px; border-radius:999px; color:#fff}
+  .detail h2{font-family:'Playfair Display',serif; font-size:22px; margin:9px 0 2px; line-height:1.15}
+  .detail .addr{font-size:13px; color:var(--muted)}
+  .detail .row{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-top:10px}
+  .detail .big-rate{font-weight:800; font-size:20px}
+  .detail .big-rate .stars{color:var(--gold); font-size:16px; letter-spacing:1.5px}
+  .openpill{font-size:12px; font-weight:700; padding:3px 10px; border-radius:999px}
+  .openpill.y{background:#e7f6ec; color:#1f7a44} .openpill.n{background:#fdecec; color:#b23a3a}
+  .detail .desc{font-size:13.5px; color:#3f586c; margin-top:11px; line-height:1.5}
+  .detail .hours{font-size:12.5px; color:var(--muted); margin-top:6px}
+  .actions{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px}
+  .actions a, .actions button{
+    display:flex; align-items:center; justify-content:center; gap:7px; padding:10px; border-radius:11px;
+    font-size:13px; font-weight:700; text-decoration:none; cursor:pointer; border:1px solid var(--line); background:#fff; color:var(--ink);
+  }
+  .actions a.primary{grid-column:1/-1; background:var(--sea); color:#fff; border-color:transparent}
+  .actions a:hover{filter:brightness(.97)}
+  .reviews{margin-top:16px; border-top:1px solid var(--line); padding-top:13px}
+  .reviews h4{font-size:13px; margin:0 0 9px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px}
+  .rev{display:flex; gap:9px; margin-bottom:12px}
+  .rev img{width:30px;height:30px;border-radius:50%; flex:none; background:#dde7ee}
+  .rev .who{font-size:12.5px; font-weight:700}
+  .rev .when{font-size:11px; color:var(--muted)}
+  .rev .rstars{color:var(--gold); font-size:11px}
+  .rev .txt{font-size:12.5px; color:#3f586c; line-height:1.45; margin-top:3px}
+  .spin{display:inline-block; width:16px;height:16px;border:2px solid #cfe0ec; border-top-color:var(--sea); border-radius:50%; animation:sp .8s linear infinite; vertical-align:-3px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* ---------- Overlay (missing key / errors) ---------- */
+  .overlay{position:fixed; inset:0; background:rgba(13,40,66,.62); z-index:100; display:none; place-items:center; padding:20px}
+  .overlay.show{display:grid}
+  .overlay .box{background:#fff; border-radius:18px; max-width:560px; padding:28px 30px; box-shadow:0 30px 80px rgba(0,0,0,.4)}
+  .overlay h2{font-family:'Playfair Display',serif; margin:0 0 6px; font-size:24px}
+  .overlay p{font-size:14.5px; color:#3f586c; line-height:1.55}
+  .overlay code{background:#f1f5f8; padding:2px 7px; border-radius:6px; font-size:13px; color:#b23a3a}
+  .overlay ol{font-size:14px; color:#3f586c; line-height:1.7; padding-left:20px}
+
+  .toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; padding:11px 18px; border-radius:999px; font-size:13.5px; z-index:80; opacity:0; transition:.3s; pointer-events:none}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  /* ---------- Mobile ---------- */
+  @media (max-width:880px){
+    .app{grid-template-rows:auto auto 1fr; height:auto; min-height:100%}
+    .main{display:block}
+    .mapwrap{height:46vh; position:sticky; top:0; z-index:20; box-shadow:0 6px 18px rgba(10,40,70,.18)}
+    .sidebar{border-right:none}
+    .list{max-height:none; overflow:visible}
+    header.top h1{font-size:20px}
+    .detail{
+      position:fixed; z-index:100;
+      top:auto; left:0; right:0; bottom:0; width:100%; max-height:86dvh; border-radius:20px 20px 0 0;
+      transform:translateY(110%);
+    }
+    .detail.open{transform:translateY(0)}
+    .legend{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1>Athens · Our Trip</h1>
+      <div class="sub">Home base: <b>Pl. Eleftherias 22</b> · attractions, bars &amp; vegan-friendly eats nearby</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="help" id="helpBtn">How to use</button>
+  </header>
+
+  <div class="main">
+    <aside class="sidebar">
+      <div class="controls">
+        <input class="search" id="search" type="search" placeholder="Search places…" autocomplete="off" />
+        <div class="chips" id="chips">
+          <button class="chip" data-cat="all" aria-pressed="true">All</button>
+          <button class="chip" data-cat="attraction" aria-pressed="false"><span class="dot" style="background:var(--attraction)"></span>Attractions</button>
+          <button class="chip" data-cat="restaurant" aria-pressed="false"><span class="dot" style="background:var(--restaurant)"></span>Eat</button>
+          <button class="chip" data-cat="bar" aria-pressed="false"><span class="dot" style="background:var(--bar)"></span>Bars</button>
+        </div>
+        <div class="toggles" id="toggles">
+          <button class="toggle" data-f="vegan" aria-pressed="false">🌱 Fully vegan</button>
+          <button class="toggle" data-f="view" aria-pressed="false">🌅 Great view</button>
+          <button class="toggle" data-f="walk" aria-pressed="false">🚶 Walkable</button>
+        </div>
+      </div>
+      <div class="countline" id="countline"></div>
+      <div class="list" id="list"></div>
+    </aside>
+
+    <div class="mapwrap">
+      <div id="map"></div>
+      <button class="fab" id="locateBtn" title="Show my location">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
+      </button>
+      <div class="legend">
+        <div><span class="d" style="background:var(--home)"></span> Your apartment</div>
+        <div><span class="d" style="background:var(--attraction)"></span> Attractions</div>
+        <div><span class="d" style="background:var(--restaurant)"></span> Restaurants</div>
+        <div><span class="d" style="background:var(--bar)"></span> Bars</div>
+      </div>
+
+      <div class="detail" id="detail">
+        <div class="hero" id="hero"><div class="noimg">No photo</div><button class="close" id="closeBtn">×</button></div>
+        <div class="body" id="detailBody"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="box" id="overlayBox"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   THE PLACES  — curated for Pl. Eleftherias 22, Athens
+   Each item is resolved live against Google so ratings/photos/reviews
+   are always current. "query" is what we ask Google to find.
+   ===================================================================== */
+const BASE = { lat: 37.98186, lng: 23.72361 }; // Plateia Eleftherias / Koumoundourou Sq
+
+const PLACES = [
+  // ---- ATTRACTIONS ----
+  {cat:'attraction', name:'Acropolis & Parthenon', query:'Acropolis of Athens', area:'Acropolis', tags:['must','view'], blurb:'The crowning icon of Western civilization — the 5th-c. BC Parthenon atop the sacred rock. Book a timed entry (~€30) and go early or late.'},
+  {cat:'attraction', name:'Acropolis Museum', query:'Acropolis Museum, Athens', area:'Makrygianni', blurb:'World-class modern museum showing the original Parthenon sculptures over glass-floored ancient ruins.'},
+  {cat:'attraction', name:'Ancient Agora & Temple of Hephaestus', query:'Ancient Agora of Athens, Adrianou', area:'Thissio', blurb:'Heart of ancient democracy where Socrates walked — crowned by the best-preserved Greek temple anywhere.'},
+  {cat:'attraction', name:'Roman Agora & Tower of the Winds', query:'Roman Agora of Athens', area:'Plaka', blurb:'Roman-era marketplace with the elegant octagonal Tower of the Winds — the world’s first weather station.'},
+  {cat:'attraction', name:'Hadrian’s Library', query:"Hadrian's Library, Athens", area:'Monastiraki', blurb:'Emperor Hadrian’s grand 2nd-c. AD library complex, right beside Monastiraki Square.'},
+  {cat:'attraction', name:'Monastiraki Square & Flea Market', query:'Monastiraki Square, Athens', area:'Monastiraki', blurb:'Buzzing hub of stalls, antiques and street food — with a surprise Acropolis view.'},
+  {cat:'attraction', name:'Plaka', query:'Plaka, Athens', area:'Plaka', blurb:'Athens’ oldest quarter — romantic cobbled lanes, neoclassical houses and tavernas under the Acropolis.'},
+  {cat:'attraction', name:'Anafiotika', query:'Anafiotika, Athens', area:'Plaka', tags:['view'], blurb:'A tiny Cycladic “island village” of whitewashed houses and blue doors hidden on the Acropolis slope.'},
+  {cat:'attraction', name:'Kerameikos', query:'Kerameikos Archaeological Site, Athens', area:'Kerameikos', blurb:'Tranquil, uncrowded ancient cemetery and city gates — the closest major site to your base.'},
+  {cat:'attraction', name:'Temple of Olympian Zeus & Hadrian’s Arch', query:'Temple of Olympian Zeus, Athens', area:'Center', blurb:'Colossal columns of Greece’s largest ancient temple, beside Hadrian’s triumphal marble gateway.'},
+  {cat:'attraction', name:'Syntagma & Changing of the Guard', query:'Syntagma Square, Athens', area:'Syntagma', blurb:'Athens’ civic heart — kilted Evzone guards perform their ceremony hourly at the Tomb of the Unknown Soldier.'},
+  {cat:'attraction', name:'National Garden', query:'National Garden, Athens', area:'Syntagma', blurb:'Shady royal garden with ponds, ducks and a small zoo — a cool green escape from the heat.'},
+  {cat:'attraction', name:'Areopagus Hill', query:'Areopagus Hill, Athens', area:'Acropolis', tags:['view','sunset'], blurb:'Free marble outcrop with front-row golden-hour views of the Acropolis and the city.'},
+  {cat:'attraction', name:'Philopappos Hill', query:'Filopappou Hill, Athens', area:'Thissio', tags:['view','sunset'], blurb:'Locals’ favourite sunset spot — pine-covered paths to a monument framing the perfect Acropolis view.'},
+  {cat:'attraction', name:'National Archaeological Museum', query:'National Archaeological Museum, Athens', area:'Exarchia', tags:['ride'], blurb:'Greece’s greatest museum — Mycenaean gold, the Antikythera Mechanism and unrivalled ancient art.'},
+  {cat:'attraction', name:'Panathenaic Stadium', query:'Panathenaic Stadium, Athens', area:'Pangrati', tags:['ride'], blurb:'The all-marble stadium that hosted the first modern Olympics in 1896 — you can run the track.'},
+  {cat:'attraction', name:'Stavros Niarchos Foundation', query:'Stavros Niarchos Foundation Cultural Center', area:'Kallithea', tags:['ride'], blurb:'Renzo Piano’s striking seaside park, opera house and library — rooftop views to the sea and Acropolis.'},
+
+  // ---- RESTAURANTS (vegan / vegan-friendly) ----
+  {cat:'restaurant', name:'Los Vegans', query:'Los Vegans, Plateon 37, Athens', area:'Metaxourgeio', vegan:'full', price:'€€', blurb:'Chic plant-based bistro ~5 min from your door — standout vegan gyros, kebabs and pasta in a plant-filled room.'},
+  {cat:'restaurant', name:'Veganistan', query:'Veganistan, Keramikou 101, Athens', area:'Kerameikos', vegan:'full', price:'€', blurb:'Cozy, local deli for cruelty-free salads, soups, snacks and mezze — right by the square.'},
+  {cat:'restaurant', name:'The Place', query:'The Place, Persefonis, Kerameikos, Athens', area:'Kerameikos', vegan:'options', price:'€€', blurb:'Leafy garden courtyards by Kerameikos metro; all-day brunch-to-cocktails with clear vegan picks.'},
+  {cat:'restaurant', name:'Kokkion', query:'Kokkion, Protogenous 2, Psyrri, Athens', area:'Psyrri', vegan:'options', price:'€', blurb:'Beloved Psyrri gelato shop with a rich line of 100% vegan, dairy-free sorbet flavours.'},
+  {cat:'restaurant', name:'Feyrouz', query:'Feyrouz, Karori 23, Psyrri, Athens', area:'Psyrri', vegan:'options', price:'€', blurb:'Family-run Levantine gem — vegan lahmacun (zaatar &amp; walnut), lentil soup and salads. Closed Sundays.'},
+  {cat:'restaurant', name:'Plan(e)t Ice Cream', query:'Plan(e)t Ice Cream, Ermou 86, Athens', area:'Monastiraki', vegan:'full', price:'€', blurb:'World-first plant-based, carbon-negative oat ice cream — many sugar-free scoops, on Ermou.'},
+  {cat:'restaurant', name:'Falafellas', query:'Falafellas, Aiolou 51, Athens', area:'Monastiraki', vegan:'options', price:'€', blurb:'Cult falafel wraps since 2010 — crispy, fluffy, cheap and fully vegan when you skip the yogurt.'},
+  {cat:'restaurant', name:'Rhino Vegan Beat', query:'Rhino Vegan Beat, Perikleous 56, Athens', area:'Monastiraki', vegan:'full', price:'€€', blurb:'Award-winning vegan street food — mushroom gyros, pastitsio and truffle mayo in an arcade off Ermou.'},
+  {cat:'restaurant', name:'Holy Llama', query:'Holy Llama, Nikis 23, Athens', area:'Syntagma', vegan:'full', price:'€€', blurb:'Possibly Athens’ best vegan bakery — flaky pistachio wheels, cruffins, cinnamon rolls and all-day brunch.'},
+  {cat:'restaurant', name:'Avocado', query:'Avocado Vegetarian Cafe, Nikis 30, Athens', area:'Syntagma', vegan:'options', price:'€€', blurb:'Athens’ pioneering veg café (since 2010) near the National Garden — creative, allergen-marked, most items veganizable.'},
+  {cat:'restaurant', name:'Winners Vegan', query:'Winners Vegan, Nikis 27, Athens', area:'Syntagma', vegan:'full', price:'€€€', blurb:'Refined fully-vegan dining in the Niki Athens Hotel — the “treat yourself” pick. Worth booking ahead.'},
+  {cat:'restaurant', name:'Mama Tierra', query:'Mama Tierra, Akadimias 84, Athens', area:'Exarchia', vegan:'full', price:'€€', blurb:'Iconic vegan moussaka (coconut béchamel + black beans) and multi-ethnic plates. ~20 min walk north.'},
+
+  // ---- BARS ----
+  {cat:'bar', name:'The Clumsies', query:'The Clumsies, Praxitelous 30, Athens', area:'Center', blurb:'Athens’ most famous bar — a perennial World’s 50 Best — flawless, inventive cocktails in a neoclassical townhouse.'},
+  {cat:'bar', name:'Line', query:'Line cocktail bar, Kolokotroni, Athens', area:'Center', blurb:'No. 8 in the World’s 50 Best Bars 2025 — sleek, zero-waste, farm-to-glass drinks by the Clumsies team.'},
+  {cat:'bar', name:'Baba au Rum', query:'Baba au Rum, Klitiou 6, Athens', area:'Center', blurb:'400+ rums and tiki-tinged classics — a World’s 50 Best “Legend of the List”.'},
+  {cat:'bar', name:'The Bar in Front of the Bar', query:'The Bar in Front of the Bar, Athens', area:'Center', blurb:'Tiny street-side standing bar — 8 daily cocktails made from kitchen scraps. New to World’s 50 Best 2025.'},
+  {cat:'bar', name:'Noel', query:'Noel bar, Kolokotroni 59, Athens', area:'Center', blurb:'Year-round Christmas glam in a hidden arcade — theatrical decor, jazz &amp; funk, and genuinely excellent cocktails.'},
+  {cat:'bar', name:'MoMix Bar', query:'MoMix Bar, Psyrri, Athens', area:'Psyrri', blurb:'Molecular mixology — “drinks in solid form” — a fun, theatrical change of pace in the heart of Psyrri.'},
+  {cat:'bar', name:'Six d.o.g.s', query:'Six d.o.g.s, Avramiotou 6-8, Athens', area:'Psyrri', blurb:'Grungy-cool multi-space — hidden garden drinks early, DJs and live music late. A Psyrri institution.'},
+  {cat:'bar', name:'Boo!', query:'Boo bar, Psyrri, Athens', area:'Psyrri', tags:['view'], blurb:'Wildly atmospheric Psyrri party bar with a spiral-stair rooftop and legendary Friday nights.'},
+  {cat:'bar', name:'A for Athens', query:'A for Athens rooftop bar, Monastiraki, Athens', area:'Monastiraki', tags:['view'], blurb:'The classic Monastiraki rooftop — the most dramatic head-on Acropolis view. Book ahead.'},
+  {cat:'bar', name:'360 Cocktail Bar', query:'360 Cocktail Bar, Monastiraki, Athens', area:'Monastiraki', tags:['view'], blurb:'Panoramic rooftop over Monastiraki Square with strong cocktails. Reserve a view table.'},
+  {cat:'bar', name:'Couleur Locale', query:'Couleur Locale, Normanou 3, Monastiraki, Athens', area:'Monastiraki', tags:['view'], blurb:'Hidden boho rooftop with a stunning Parthenon view and a less touristy crowd.'},
+  {cat:'bar', name:'Brettos', query:'Brettos Bar, Kidathineon 41, Plaka, Athens', area:'Plaka', blurb:'Athens’ oldest distillery (est. 1909) — a glowing wall of colored bottles, ouzo, brandy and 35+ liqueurs.'},
+  {cat:'bar', name:'Heteroclito', query:'Heteroclito Wine Bar, Fokionos 2, Athens', area:'Center', blurb:'Cozy Parisian-style cave à vin — 200+ Greek labels with a natural-wine focus and great staff.'},
+];
+
+const CAT = {
+  attraction:{label:'Attraction', color:'#2d7dd2'},
+  restaurant:{label:'Restaurant', color:'#2e9e5b'},
+  bar:{label:'Bar', color:'#8e44ad'},
+};
+
+/* ---------- Load Google Maps (only if a real key is present) ---------- */
+const KEY = window.GOOGLE_MAPS_API_KEY || "";
+const KEY_OK = KEY && !KEY.startsWith("YOUR_") && KEY.length > 20;
+if (KEY_OK) {
+  (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+    key: KEY, v: "weekly", language: "en", region: "GR",
+  });
+}
+
+/* ---------- State ---------- */
+let map, Place, Marker, Circle, infoBase, userMarker, accCircle, following=false, watchId=null, detailToken=0;
+const state = { cat:'all', q:'', filters:{vegan:false, view:false, walk:false}, active:null };
+const RES = {}; // index -> {id, lat, lng}  (resolved location)
+const CARD = {}; // index -> {rating, count, price}  (light info for list)
+const els = {}; // index -> list DOM node
+
+const $ = s => document.querySelector(s);
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const haversine = (a,b)=>{const R=6371000,t=x=>x*Math.PI/180,dLa=t(b.lat-a.lat),dLo=t(b.lng-a.lng),
+  s=Math.sin(dLa/2)**2+Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(s));};
+const fmtDist = m => m<950 ? `${Math.round(m/10)*10} m` : `${(m/1000).toFixed(1)} km`;
+const fmtWalk = m => `${Math.max(1,Math.round((m*1.3)/83))} min walk`; // ×1.3 for Athens' dense, hilly streets
+const stars = r => { const f=Math.round(r); return '★★★★★'.slice(0,f)+'☆☆☆☆☆'.slice(0,5-f); };
+const priceEuro = p => { if(p==null) return ''; const map={PRICE_LEVEL_FREE:0,PRICE_LEVEL_INEXPENSIVE:1,PRICE_LEVEL_MODERATE:2,PRICE_LEVEL_EXPENSIVE:3,PRICE_LEVEL_VERY_EXPENSIVE:4}; let n=typeof p==='number'?p:map[p]; return n? '€'.repeat(n):''; };
+
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3200); }
+
+/* ---------- Cache helpers (cuts API calls + speeds repeat visits) ---------- */
+const cacheGet = (k,maxAgeMs)=>{ try{const v=JSON.parse(localStorage.getItem(k)); if(!v) return null; if(maxAgeMs && v.t && (new Date().getTime()-v.t)>maxAgeMs) return null; return v.d;}catch(e){return null;} };
+const cacheSet = (k,d)=>{ try{localStorage.setItem(k,JSON.stringify({t:new Date().getTime(),d}));}catch(e){} };
+
+/* ===================================================================== */
+async function init(){
+  if (!KEY_OK){ showKeyOverlay(); buildList(); return; }
+  try{
+    const [mapsLib, mk, pl] = await Promise.all([
+      google.maps.importLibrary('maps'),
+      google.maps.importLibrary('marker'),
+      google.maps.importLibrary('places'),
+    ]);
+    const { Map, InfoWindow } = mapsLib;
+    Marker = mk.Marker || google.maps.Marker; Place = pl.Place; Circle = mapsLib.Circle;
+
+    map = new Map($('#map'), {
+      center: BASE, zoom: 15, clickableIcons:false, gestureHandling:'cooperative',
+      mapTypeControl:false, streetViewControl:false, fullscreenControl:false,
+      styles: MAP_STYLE,
+    });
+
+    // Home base marker
+    const homeMarker = new Marker({
+      map, position: BASE, title:'Your apartment — Pl. Eleftherias 22', zIndex:9999,
+      icon: pin('#e8772e', 11),
+    });
+    infoBase = new InfoWindow({ content:'<b>🏠 Your apartment</b><br>Pl. Eleftherias 22' });
+    homeMarker.addListener('click', ()=> infoBase.open({map, anchor:homeMarker}));
+
+    buildList();
+    wireControls();
+    resolveAll();
+  }catch(err){ console.error(err); showErrorOverlay(err); buildList(); }
+}
+
+function pin(color, scale){
+  return { path: google.maps.SymbolPath.CIRCLE, scale, fillColor:color, fillOpacity:1, strokeColor:'#fff', strokeWeight:2.5 };
+}
+
+/* ---------- Resolve each place against Google, then add markers ---------- */
+async function resolveAll(){
+  let i=0; const pool=3; // gentler on spotty mobile/roaming networks
+  const next = async ()=>{ const idx=i++; if(idx>=PLACES.length) return; await resolveOne(idx); await next(); };
+  await Promise.all(Array.from({length:pool}, next));
+}
+
+async function resolveOne(idx){
+  const p = PLACES[idx];
+  try{
+    let loc = cacheGet('ath_loc_'+p.query); // place id+coords (safe to cache long-term)
+    if(!loc){
+      const { places } = await Place.searchByText({
+        textQuery:p.query, fields:['id','location'], locationBias:{center:BASE, radius:2600},
+        maxResultCount:1, region:'gr', language:'en',
+      });
+      if(!places || !places.length){ console.warn('Not found:', p.query); p._failed=true; updateListMeta(idx); return; }
+      loc = { id:places[0].id, lat:places[0].location.lat(), lng:places[0].location.lng() };
+      cacheSet('ath_loc_'+p.query, loc);
+    }
+    RES[idx]=loc;
+    p._dist = haversine(BASE, {lat:loc.lat, lng:loc.lng});
+
+    // marker
+    const m = new Marker({ map, position:{lat:loc.lat,lng:loc.lng}, title:p.name, icon:pin(CAT[p.cat].color, 8.5) });
+    m.addListener('click', ()=>openDetail(idx));
+    p._marker = m;
+    applyFiltersToOne(idx);
+    updateListMeta(idx);
+    if(state.filters.walk) applyFilters(); // distances now known → refresh walkable list & count
+
+    // light info for the list (rating) — cached 1 day (ratings change)
+    let light = cacheGet('ath_card_'+loc.id, 1*864e5);
+    if(!light){
+      const lp = new Place({id:loc.id});
+      await lp.fetchFields({ fields:['rating','userRatingCount','priceLevel'] });
+      light = { rating:lp.rating||null, count:lp.userRatingCount||0, price:lp.priceLevel||null };
+      cacheSet('ath_card_'+loc.id, light);
+    }
+    CARD[idx]=light;
+    updateListRating(idx);
+  }catch(e){ console.warn('resolve failed', p.query, e); p._failed=true; updateListMeta(idx); }
+}
+
+/* ---------- Build & render the sidebar list ---------- */
+function buildList(){
+  const list=$('#list'); list.innerHTML='';
+  PLACES.forEach((p,idx)=>{
+    const c=document.createElement('div'); c.className='card'; c.dataset.idx=idx;
+    c.innerHTML = `
+      <div class="ttl"><span class="cdot" style="background:${CAT[p.cat].color}"></span><h3>${p.name}</h3></div>
+      <div class="meta" data-meta></div>
+      <div class="blurb">${p.blurb}</div>`;
+    c.addEventListener('click', ()=> KEY_OK ? openDetail(idx) : toast('Add your Google key first (see “How to use”).'));
+    list.appendChild(c); els[idx]=c;
+    updateListMeta(idx);
+  });
+  applyFilters();
+}
+
+function metaHtml(idx){
+  const p=PLACES[idx]; const bits=[];
+  if(p.cat==='restaurant') bits.push(p.vegan==='full' ? `<span class="badge veg">🌱 100% vegan</span>` : `<span class="badge opt">vegan options</span>`);
+  if((p.tags||[]).includes('view')) bits.push(`<span class="badge view">🌅 view</span>`);
+  if((p.tags||[]).includes('ride')) bits.push(`<span class="badge ride">short ride</span>`);
+  if(p.price) bits.push(`<span class="badge price">${p.price}</span>`);
+  // rating
+  const cd=CARD[idx];
+  if(cd && cd.rating) bits.push(`<span class="rate"><span class="stars">${stars(cd.rating)}</span> ${cd.rating.toFixed(1)} <span class="cnt">(${cd.count})</span></span>`);
+  else if(p._failed) bits.push(`<span class="rate loading">⚠ tap for Google ↗</span>`);
+  else if(KEY_OK) bits.push(`<span class="rate loading" data-rate>rating…</span>`);
+  // area + distance
+  let geo = p.area || '';
+  if(p._dist!=null) geo += ` · ${fmtDist(p._dist)}`;
+  if(geo) bits.push(`<span>${geo}</span>`);
+  return bits.join('');
+}
+function updateListMeta(idx){ const n=els[idx]; if(n) n.querySelector('[data-meta]').innerHTML=metaHtml(idx); }
+function updateListRating(idx){ updateListMeta(idx); }
+
+/* ---------- Filtering ---------- */
+function visible(idx){
+  const p=PLACES[idx];
+  if(state.cat!=='all' && p.cat!==state.cat) return false;
+  if(state.q){ const q=state.q.toLowerCase(); if(!(p.name+' '+p.blurb+' '+(p.area||'')).toLowerCase().includes(q)) return false; }
+  if(state.filters.vegan && !(p.cat==='restaurant' && p.vegan==='full')) return false;
+  if(state.filters.view && !(p.tags||[]).includes('view')) return false;
+  if(state.filters.walk){ if((p.tags||[]).includes('ride')) return false; if(p._dist!=null && p._dist>1700) return false; }
+  return true;
+}
+function applyFiltersToOne(idx){ const p=PLACES[idx]; if(p._marker) p._marker.setVisible(visible(idx)); }
+function applyFilters(){
+  let n=0;
+  PLACES.forEach((p,idx)=>{ const v=visible(idx); if(els[idx]) els[idx].style.display=v?'':'none'; if(p._marker) p._marker.setVisible(v); if(v)n++; });
+  $('#countline').textContent = `${n} place${n!==1?'s':''} shown`;
+}
+
+/* ---------- Detail panel ---------- */
+async function openDetail(idx){
+  const p=PLACES[idx], loc=RES[idx];
+  if(!loc){ openFallback(idx); return; }
+  setActive(idx);
+  const myToken = ++detailToken;
+  map.panTo({lat:loc.lat,lng:loc.lng}); map.setZoom(16);
+  if(p._marker){ p._marker.setAnimation(google.maps.Animation.BOUNCE); setTimeout(()=>p._marker.setAnimation(null),700); }
+
+  const panel=$('#detail'), body=$('#detailBody'), hero=$('#hero');
+  hero.style.backgroundImage=''; hero.querySelector('.noimg').style.display='grid';
+  body.innerHTML=`<p style="color:#5c7488;font-size:14px">Loading details <span class="spin"></span></p>`;
+  panel.classList.add('open');
+
+  try{
+    const place=new Place({id:loc.id});
+    await place.fetchFields({ fields:['displayName','formattedAddress','location','rating','userRatingCount','priceLevel','regularOpeningHours','reviews','photos','nationalPhoneNumber','websiteURI','googleMapsURI','editorialSummary','utcOffsetMinutes'] });
+    if(myToken!==detailToken) return; // a newer tap superseded this request — don't overwrite it
+
+    // hero photo
+    const photo = place.photos && place.photos[0];
+    if(photo){ try{ hero.style.backgroundImage=`url("${photo.getURI({maxWidth:800,maxHeight:480})}")`; hero.querySelector('.noimg').style.display='none'; }catch(e){} }
+
+    // open now
+    let openNow; try{ openNow = await place.isOpen(); }catch(e){}
+    let todayLine='';
+    const wd = place.regularOpeningHours && place.regularOpeningHours.weekdayDescriptions;
+    if(wd && wd.length){ const gi=(new Date().getDay()+6)%7; todayLine = esc(wd[gi]||''); }
+
+    const cd = CAT[p.cat];
+    const rUri = place.googleMapsURI || `https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}&query_place_id=${loc.id}`;
+    const dir = `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}&destination_place_id=${loc.id}&travelmode=walking`;
+    const appleDir = `https://maps.apple.com/?daddr=${loc.lat},${loc.lng}&dirflg=w`;
+
+    body.innerHTML = `
+      <span class="catpill" style="background:${cd.color}">${cd.label}</span>
+      <h2>${esc(place.displayName||p.name)}</h2>
+      <div class="addr">${esc(place.formattedAddress||'')}</div>
+      <div class="row">
+        ${place.rating?`<span class="big-rate">${place.rating.toFixed(1)} <span class="stars">${stars(place.rating)}</span></span>
+          <span style="color:#5c7488;font-size:13px">${place.userRatingCount||0} reviews</span>`:'<span style="color:#5c7488;font-size:13px">No rating yet</span>'}
+        ${priceEuro(place.priceLevel)?`<span class="badge price">${priceEuro(place.priceLevel)}</span>`:''}
+        ${openNow===true?'<span class="openpill y">Open now</span>':openNow===false?'<span class="openpill n">Closed</span>':''}
+      </div>
+      ${p._dist!=null?`<div class="hours">🚶 ${fmtDist(p._dist)} from your apartment · ${fmtWalk(p._dist)}</div>`:''}
+      <div class="desc">${(place.editorialSummary&&place.editorialSummary.text)?esc(place.editorialSummary.text):p.blurb}</div>
+      ${todayLine?`<div class="hours">🕒 Today: ${todayLine}</div>`:''}
+      <div class="actions">
+        <a class="primary" href="${dir}" target="_blank" rel="noopener">🧭 Walking directions</a>
+        <a href="${appleDir}" target="_blank" rel="noopener">🍎 Apple Maps</a>
+        <a href="${rUri}" target="_blank" rel="noopener">📍 Google Maps</a>
+        ${place.websiteURI?`<a href="${place.websiteURI}" target="_blank" rel="noopener">🌐 Website</a>`:''}
+        ${place.nationalPhoneNumber?`<a href="tel:${place.nationalPhoneNumber.replace(/\s/g,'')}">📞 Call</a>`:''}
+      </div>
+      ${renderReviews(place.reviews)}`;
+  }catch(e){ console.error(e); body.innerHTML=`<p style="color:#b23a3a;font-size:14px">Couldn’t load live details. <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.query)}" target="_blank" rel="noopener">Open in Google Maps</a> instead.</p>`; }
+}
+
+function renderReviews(reviews){
+  if(!reviews||!reviews.length) return '';
+  const items = reviews.slice(0,3).map(r=>{
+    const who=(r.authorAttribution&&r.authorAttribution.displayName)||'Guest';
+    const img=(r.authorAttribution&&r.authorAttribution.photoURI)||'';
+    const txt=(r.text&&typeof r.text==='object')?(r.text.text||''):(r.text||'');
+    const when=r.relativePublishTimeDescription||'';
+    const shown=txt.length>240?txt.slice(0,240)+'…':txt;
+    return `<div class="rev">${img?`<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:'<div style="width:30px;height:30px;border-radius:50%;background:#dde7ee;flex:none"></div>'}
+      <div><div class="who">${esc(who)} <span class="when">· ${esc(when)}</span></div>
+      <div class="rstars">${stars(r.rating||0)}</div>
+      <div class="txt">${esc(shown)}</div></div></div>`;
+  }).join('');
+  return `<div class="reviews"><h4>Recent reviews</h4>${items}</div>`;
+}
+
+function setActive(idx){
+  if(state.active!=null && els[state.active]) els[state.active].classList.remove('active');
+  state.active=idx; const n=els[idx]; if(n){ n.classList.add('active'); n.scrollIntoView({block:'nearest',behavior:'smooth'}); }
+}
+function closeDetail(){
+  $('#detail').classList.remove('open');
+  if(state.active!=null && els[state.active]) els[state.active].classList.remove('active');
+  state.active=null; detailToken++; // drop any in-flight detail render
+}
+function openFallback(idx){
+  const p=PLACES[idx], cd=CAT[p.cat]; setActive(idx);
+  const hero=$('#hero'); hero.style.backgroundImage=''; hero.querySelector('.noimg').style.display='grid';
+  $('#detailBody').innerHTML = `
+    <span class="catpill" style="background:${cd.color}">${cd.label}</span>
+    <h2>${esc(p.name)}</h2>
+    <div class="desc">${p.blurb}</div>
+    <div class="hours">${p._failed?'Couldn’t auto-load live details for this one.':'Still loading… give it a moment, or:'}</div>
+    <div class="actions"><a class="primary" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.query)}" target="_blank" rel="noopener">📍 Find on Google Maps</a></div>`;
+  $('#detail').classList.add('open');
+}
+
+/* ---------- Controls wiring ---------- */
+function wireControls(){
+  $('#search').addEventListener('input', e=>{ state.q=e.target.value.trim(); applyFilters(); });
+  $('#chips').addEventListener('click', e=>{ const b=e.target.closest('.chip'); if(!b) return;
+    document.querySelectorAll('#chips .chip').forEach(c=>c.setAttribute('aria-pressed', c===b));
+    state.cat=b.dataset.cat; applyFilters(); });
+  $('#toggles').addEventListener('click', e=>{ const b=e.target.closest('.toggle'); if(!b) return;
+    const f=b.dataset.f, on=b.getAttribute('aria-pressed')!=='true'; b.setAttribute('aria-pressed',on); state.filters[f]=on; applyFilters(); });
+  $('#closeBtn').addEventListener('click', closeDetail);
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDetail(); });
+  $('#locateBtn').addEventListener('click', toggleLocate);
+  $('#helpBtn').addEventListener('click', showHelp);
+  map.addListener('click', closeDetail);                       // tap empty map to dismiss the card
+  map.addListener('dragstart', ()=>{ if(following){ following=false; $('#locateBtn').classList.remove('on'); } }); // stop GPS snap-back while you look around
+}
+
+/* ---------- Live location (the blue dot) ---------- */
+function toggleLocate(){
+  if(!navigator.geolocation){ toast('Your browser can’t share location.'); return; }
+  if(watchId==null){ startLocate(); return; }                       // off → start locating
+  if(!following){ following=true; $('#locateBtn').classList.add('on'); if(userMarker) map.panTo(userMarker.getPosition()); return; } // dragged away → recenter & resume follow
+  stopLocate();                                                     // following → turn off
+}
+function startLocate(){
+  $('#locateBtn').classList.add('on'); following=true;
+  navigator.geolocation.getCurrentPosition(p=>{ updateUser(p); map.panTo({lat:p.coords.latitude,lng:p.coords.longitude}); map.setZoom(16); },
+    onGeoErr, {enableHighAccuracy:true, timeout:10000, maximumAge:5000});
+  watchId=navigator.geolocation.watchPosition(p=>updateUser(p,true), onGeoErr, {enableHighAccuracy:true, maximumAge:5000, timeout:12000});
+}
+function stopLocate(){
+  following=false; $('#locateBtn').classList.remove('on');
+  if(watchId!=null){ navigator.geolocation.clearWatch(watchId); watchId=null; }
+  if(userMarker){ userMarker.setMap(null); userMarker=null; }       // remove the stale blue dot
+  if(accCircle){ accCircle.setMap(null); accCircle=null; }
+}
+function updateUser(pos, follow){
+  const ll={lat:pos.coords.latitude, lng:pos.coords.longitude}, acc=pos.coords.accuracy||40;
+  if(!userMarker){
+    userMarker=new Marker({map,position:ll,zIndex:99999,title:'You are here',
+      icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:'#1a73e8',fillOpacity:1,strokeColor:'#fff',strokeWeight:3}});
+    accCircle=new Circle({map,center:ll,radius:acc,strokeColor:'#1a73e8',strokeOpacity:.4,strokeWeight:1,fillColor:'#1a73e8',fillOpacity:.12});
+  } else { userMarker.setPosition(ll); accCircle.setCenter(ll); accCircle.setRadius(acc); }
+  if(follow && following) map.panTo(ll);
+}
+function onGeoErr(err){ stopLocate();
+  if(err.code===1) toast('Location blocked. Allow location for this site to see your dot.');
+  else if(location.protocol==='file:') toast('Live location needs the site hosted on https:// (see “How to use”).');
+  else toast('Couldn’t get your location — try again outdoors.');
+}
+
+/* ---------- Overlays ---------- */
+function showKeyOverlay(){
+  $('#overlayBox').innerHTML=`<h2>Almost ready — add your Google key</h2>
+    <p>The map and ratings need a free Google Maps key. Open <code>index.html</code> in a text editor and replace <code>YOUR_GOOGLE_MAPS_API_KEY</code> near the top with your key.</p>
+    <p>Step-by-step instructions (with the exact buttons to click and how to keep it free) are in the <b>SETUP.md</b> file next to this page.</p>
+    <p style="margin-top:14px"><button class="help" style="background:var(--sea);border:none" onclick="document.getElementById('overlay').classList.remove('show')">Got it</button></p>`;
+  $('#overlay').classList.add('show');
+}
+function showErrorOverlay(err){
+  $('#overlayBox').innerHTML=`<h2>Map couldn’t load</h2>
+    <p>Google rejected the request. Usually that means the key isn’t finished setting up. Check that in your Google Cloud account you have:</p>
+    <ol><li><b>Maps JavaScript API</b> turned on</li><li><b>Places API (New)</b> turned on</li><li>Billing enabled (free tier; we cap it)</li><li>The key’s website restriction allows this address</li></ol>
+    <p style="font-size:12px;color:#90a4b3">Technical detail: ${(err&&err.message)||err}</p>
+    <p><button class="help" style="background:var(--sea);border:none" onclick="document.getElementById('overlay').classList.remove('show')">Close</button></p>`;
+  $('#overlay').classList.add('show');
+}
+function showHelp(){
+  $('#overlayBox').innerHTML=`<h2>How to use this map</h2>
+    <ol>
+      <li><b>Tap any place</b> (in the list or a pin) to see its Google rating, reviews, photos, hours and a Directions button.</li>
+      <li><b>Filter</b> with the chips (Attractions / Eat / Bars) and toggles (🌱 fully vegan, 🌅 great view, 🚶 walkable).</li>
+      <li><b>The ◎ button</b> (bottom-right of the map) shows your live location — like Google Maps. Tap <b>Allow</b> when your phone asks.</li>
+      <li>The live dot only works when the page is opened over <b>https://</b> (i.e. hosted), not from a file on your computer.</li>
+    </ol>
+    <p>🏠 The orange pin is your apartment. Distances and walk times are measured from there.</p>
+    <p><button class="help" style="background:var(--sea);border:none" onclick="document.getElementById('overlay').classList.remove('show')">Close</button></p>`;
+  $('#overlay').classList.add('show');
+}
+$('#overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') e.currentTarget.classList.remove('show'); });
+
+/* ---------- Subtle map styling ---------- */
+const MAP_STYLE=[
+  {featureType:'poi',elementType:'labels',stylers:[{visibility:'off'}]},
+  {featureType:'transit',elementType:'labels.icon',stylers:[{visibility:'off'}]},
+  {featureType:'poi.park',elementType:'geometry',stylers:[{color:'#dcefd9'}]},
+  {featureType:'water',elementType:'geometry',stylers:[{color:'#bfe3f2'}]},
+  {featureType:'road',elementType:'geometry',stylers:[{color:'#ffffff'}]},
+  {featureType:'landscape',elementType:'geometry',stylers:[{color:'#f4f1ea'}]},
+];
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
