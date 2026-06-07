@@ -182,8 +182,8 @@
   /* ---------- Mobile ---------- */
   @media (max-width:880px){
     .app{grid-template-rows:auto auto 1fr; height:auto; min-height:100%}
-    .main{display:block}
-    .mapwrap{height:46vh; position:sticky; top:0; z-index:20; box-shadow:0 6px 18px rgba(10,40,70,.18)}
+    .main{display:flex; flex-direction:column}
+    .mapwrap{height:46vh; position:sticky; top:0; z-index:20; order:-1; box-shadow:0 6px 18px rgba(10,40,70,.18)}
     .sidebar{border-right:none}
     .list{max-height:none; overflow:visible}
     header.top h1{font-size:20px}
