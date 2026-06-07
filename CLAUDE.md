@@ -31,7 +31,7 @@ product, not public-facing.
 | Neighborhood context | Central Athens — edge of **Psyrri, Monastiraki, Metaxourgeio, Gazi** |
 | Group size | 4 people |
 | Trip length | ~1 week |
-| Home-base coordinates | `37.9838, 23.7220` (approx — verify exact during build) |
+| Home-base coordinates | `37.98186, 23.72361` (Koumoundourou Sq center — this is the value `BASE` uses in `index.html`; fine-tune to the exact doorway if ever needed) |
 
 **Why the location matters:** the apartment sits in the middle of Athens'
 nightlife + vegan-food hotspots. Everything good should be within a **5–15 min
@@ -138,7 +138,9 @@ The user is (reasonably) worried about a surprise bill. These rules keep it at
 ### Cost safety
 - **Restrict the API key** to this site's domain (HTTP referrer restriction).
   A leaked key then can't be used by anyone else.
-- **Restrict the key to only the APIs we use** (Maps JavaScript, Places).
+- **Restrict the key to only the APIs we use** (Maps JavaScript, Places **(New)**,
+  and **Directions API** — Directions powers the in-site walking-route preview; it
+  has its own generous free tier and stays $0 at our volume).
 - **Set a hard daily quota cap** in Google Cloud Console (e.g. ~1,000
   requests/day). If somehow hit, the API just stops responding — **it cannot
   generate a charge.** Worst case = "map stops loading for a day," never a bill.
@@ -167,8 +169,11 @@ finished page must be **hosted**, not just emailed around.
 
 - **Free + ~2 minutes:** Netlify Drop, GitHub Pages, or Vercel. Drag the file
   in → get an `https://` link → open it on all 4 phones.
-- Everything *except* the live dot (map, pins, info cards, directions) also works
-  by opening the file directly, so hosting is only strictly required for the dot.
+- **Caveat (important):** once the API key is referrer-restricted to the hosted
+  domain (which it is), **opening `index.html` directly from disk (`file://`) will
+  make Google reject the map with a 403** — a `file://` page sends no HTTP referrer
+  for the key to match. So in practice everyone must use the **hosted Netlify link**,
+  not the raw file. (Before the key is restricted, the file opens fine locally.)
 - For offline use, don't try to build offline maps (fiddly). Instead rely on the
   "Open in Google Maps" buttons + tell the group to pre-download Athens in the
   Google Maps app.
@@ -221,6 +226,11 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
 - [x] Inline info cards (live rating, reviews, photos, hours)
 - [x] Live geolocation blue dot (`watchPosition`)
 - [x] Directions / Call / Website deep links
+- [x] **In-site walking route** — tap "Show walking route here" → full-screen map +
+      turn-by-turn, with a **🏠 from apartment / 📍 from my location** origin switch
+      and a ← Back button (Directions API; falls back to Google Maps if it ever fails)
 - [x] Filters (Attractions / Eat / Bars + 🌱 vegan / 🌅 view / 🚶 walkable)
-- [ ] **API key created, restricted, and quota-capped by the user** ← only step left (see `SETUP.md`)
-- [ ] Hosted on HTTPS (Netlify/GitHub Pages/Vercel) + tested on phones
+- [x] **API key created, restricted (referrer + APIs), quota-capped** by the user
+- [x] **Hosted on HTTPS** → https://gazi-haftaat-hatiul.netlify.app (Netlify)
+- [x] One-finger map gestures (`greedy`); verified live on desktop + iPhone via Playwright
+- [ ] Final on-the-phone check by the group during the trip (nice-to-have)

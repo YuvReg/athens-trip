@@ -122,6 +122,20 @@
   .step .stepd{color:var(--muted); font-size:11.5px; margin-top:2px}
   .routenote{font-size:12px; color:var(--muted); font-style:italic; margin-top:8px}
 
+  /* ---------- Route mode (tap “Show walking route” → full map + route) ---------- */
+  .routeui{position:absolute; inset:0; z-index:30; display:none; pointer-events:none}
+  .routeui.show{display:block}
+  .routebar{position:absolute; top:12px; left:12px; right:12px; display:flex; gap:9px; align-items:center; pointer-events:auto}
+  .rback{background:#fff; border:none; box-shadow:var(--shadow); border-radius:999px; padding:10px 15px; font-weight:700; font-size:14px; color:var(--ink); cursor:pointer; flex:none}
+  .rback:hover{background:#f3f8fb}
+  .origintoggle{display:flex; background:#fff; border-radius:999px; box-shadow:var(--shadow); overflow:hidden; flex:1; max-width:330px}
+  .origintoggle button{flex:1; border:none; background:#fff; padding:10px 10px; font-size:12.5px; font-weight:700; color:var(--muted); cursor:pointer; white-space:nowrap}
+  .origintoggle button.on{background:var(--sea); color:#fff}
+  .routepanel{position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:18px 18px 0 0; box-shadow:0 -8px 30px rgba(10,40,70,.22); max-height:42vh; overflow-y:auto; padding:14px 16px 16px; pointer-events:auto}
+  .routego{display:block; text-align:center; background:var(--sea); color:#fff; border:none; border-radius:11px; padding:11px; font-weight:700; font-size:13.5px; text-decoration:none; margin:4px 0 12px}
+  .routego:hover{filter:brightness(.97)}
+  body.routing .fab, body.routing .legend{display:none}
+
   /* ---------- Map ---------- */
   .mapwrap{position:relative; min-height:0}
   #map{width:100%; height:100%}
@@ -168,7 +182,7 @@
     display:flex; align-items:center; justify-content:center; gap:7px; padding:10px; border-radius:11px;
     font-size:13px; font-weight:700; text-decoration:none; cursor:pointer; border:1px solid var(--line); background:#fff; color:var(--ink);
   }
-  .actions a.primary{grid-column:1/-1; background:var(--sea); color:#fff; border-color:transparent}
+  .actions .primary{grid-column:1/-1; background:var(--sea); color:#fff; border-color:transparent}
   .actions a:hover{filter:brightness(.97)}
   .reviews{margin-top:16px; border-top:1px solid var(--line); padding-top:13px}
   .reviews h4{font-size:13px; margin:0 0 9px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px}
@@ -207,6 +221,10 @@
       transform:translateY(110%);
     }
     .detail.open{transform:translateY(0)}
+    /* Route mode goes truly full-screen on a phone so the path is fully visible */
+    body.routing .mapwrap{position:fixed; inset:0; width:100%; height:100dvh; max-height:none; z-index:60}
+    body.routing header.top{display:none}
+    .routepanel{max-height:46dvh}
     .legend{display:none}
   }
 </style>
@@ -259,6 +277,18 @@
       <div class="detail" id="detail">
         <div class="hero" id="hero"><div class="noimg">No photo</div><button class="close" id="closeBtn">×</button></div>
         <div class="body" id="detailBody"></div>
+      </div>
+
+      <!-- Full-map walking-route view (appears after tapping “Show walking route here”) -->
+      <div class="routeui" id="routeui">
+        <div class="routebar">
+          <button class="rback" id="routeBack">←&nbsp; Back</button>
+          <div class="origintoggle" id="originToggle">
+            <button data-o="base" class="on">🏠 From apartment</button>
+            <button data-o="me">📍 From my location</button>
+          </div>
+        </div>
+        <div class="routepanel" id="routePanel"></div>
       </div>
     </div>
   </div>
@@ -345,6 +375,7 @@ if (KEY_OK) {
 /* ---------- State ---------- */
 let map, Place, Marker, Circle, infoBase, userMarker, accCircle, following=false, watchId=null, detailToken=0;
 let favs = new Set(), shareData = null, dirService = null, dirRenderer = null;
+let routeMode=false, routeIdx=null, routeOrigin='base', pendingLoc=null, firstFix=true;
 const state = { cat:'all', q:'', filters:{fav:false, vegan:false, view:false, walk:false}, active:null };
 const RES = {}; // index -> {id, lat, lng}  (resolved location)
 const CARD = {}; // index -> {rating, count, price}  (light info for list)
@@ -387,24 +418,70 @@ async function sharePlace(){
 }
 const isGoldenHour = () => { const h=new Date().getHours(); return h>=16 && h<21; }; // late-afternoon → sunset window
 
-/* ---------- In-site walking route (Directions API) ---------- */
+/* ---------- In-site walking route (Directions API) — full-map “route mode” ----------
+   Tapping “Show walking route here” hides the place card, blows the map up to full
+   size, draws the route, and shows a Back button + a “from apartment / from me”
+   switch. The route stays put until you tap Back (or open another place).            */
 function clearRoute(){ if(dirRenderer) dirRenderer.setMap(null); }
-async function showRoute(idx){
-  const loc=RES[idx];
-  if(!loc || !dirService){ toast('Route isn’t available for this place.'); return; }
-  const mount=document.getElementById('routeMount');
-  if(mount) mount.innerHTML = `<div class="routebox"><div class="routehead">Loading route <span class="spin"></span></div></div>`;
-  const origin = userMarker ? userMarker.getPosition() : BASE;
-  const fromLabel = userMarker ? 'your location' : 'your apartment';
+function syncOriginToggle(){ document.querySelectorAll('#originToggle button').forEach(b=>b.classList.toggle('on', b.dataset.o===routeOrigin)); }
+
+function showRoute(idx){
+  routeIdx = idx;
+  routeOrigin = userMarker ? 'me' : 'base';   // if your blue dot is already on, start the route from you
+  enterRouteMode();
+  drawRoute();
+}
+function enterRouteMode(){
+  routeMode = true;
+  $('#detail').classList.remove('open');       // hide the photo/card so the map is fully visible
+  document.body.classList.add('routing');
+  $('#routeui').classList.add('show');
+  syncOriginToggle();
+}
+function teardownRouteUI(){
+  routeMode = false;
+  document.body.classList.remove('routing');
+  const ui=$('#routeui'); if(ui) ui.classList.remove('show');
+  clearRoute();
+}
+function exitRouteMode(){
+  const idx = routeIdx;
+  teardownRouteUI();
+  if(idx!=null){ $('#detail').classList.add('open'); if(RES[idx]) map.panTo({lat:RES[idx].lat,lng:RES[idx].lng}); } // back to the normal place card
+}
+function setRouteOrigin(o){ if(o!==routeOrigin){ routeOrigin=o; syncOriginToggle(); drawRoute(); } }
+
+async function drawRoute(){
+  const idx=routeIdx; if(idx==null) return;
+  const loc=RES[idx], p=PLACES[idx], panel=$('#routePanel');
+  const gmapDir = loc ? `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}&travelmode=walking` : '';
+  if(!loc || !dirService){ panel.innerHTML=`<div class="routenote">Route isn’t available for this place yet — give it a moment to load.</div>`; return; }
+  // Routing “from me” but we don’t have a GPS fix yet → get one, then redraw.
+  let origin = routeOrigin==='me' ? (userMarker ? userMarker.getPosition() : null) : BASE;
+  if(routeOrigin==='me' && !origin){
+    panel.innerHTML=`<div class="routehead">Finding your location <span class="spin"></span></div>`;
+    ensureLocation(()=>drawRoute());
+    return;
+  }
+  const fromLabel = routeOrigin==='me' ? 'you' : 'your apartment';
+  panel.innerHTML=`<div class="routehead">Loading route <span class="spin"></span></div>`;
   try{
     const res = await dirService.route({ origin, destination:{lat:loc.lat,lng:loc.lng}, travelMode: google.maps.TravelMode.WALKING });
     dirRenderer.setMap(map); dirRenderer.setDirections(res);
     const leg = res.routes[0].legs[0];
     const steps = leg.steps.map((s,i)=>`<div class="step"><span class="stepn">${i+1}</span><div><div class="stepi">${s.instructions||''}</div><div class="stepd">${s.distance?s.distance.text:''}</div></div></div>`).join('');
-    if(mount) mount.innerHTML = `<div class="routebox"><div class="routehead">🚶 ${leg.distance.text} · ${leg.duration.text} <span class="from">from ${fromLabel}</span></div>${steps}<div class="routenote">Not ideal? Tap “Open in Google Maps” above for live turn-by-turn.</div></div>`;
-    if(res.routes[0].bounds) map.fitBounds(res.routes[0].bounds, {top:40,bottom:40,left:40,right:40});
+    panel.innerHTML =
+      `<div class="routehead">🚶 ${leg.distance.text} · ${leg.duration.text} <span class="from">from ${fromLabel} to ${esc(p.name)}</span></div>
+       <a class="routego" href="${gmapDir}" target="_blank" rel="noopener">🧭 Live turn-by-turn in Google Maps</a>
+       ${steps}
+       <div class="routenote">Walking estimate from Google. For live turn-by-turn navigation, tap the blue button above.</div>`;
+    // frame the whole route above the bottom steps panel
+    const ph = panel.getBoundingClientRect().height || 0;
+    if(res.routes[0].bounds) map.fitBounds(res.routes[0].bounds, {top:78, bottom:Math.round(ph)+24, left:36, right:36});
   }catch(e){ console.error('route', e);
-    if(mount) mount.innerHTML = `<div class="routebox"><div class="routenote">Couldn’t load the in-site route (the Directions API may need to be switched on). Use “Open in Google Maps” above instead.</div></div>`;
+    panel.innerHTML =
+      `<div class="routenote">Couldn’t load the in-site route. Tap below to open it in Google Maps instead.</div>
+       <a class="routego" href="${gmapDir}" target="_blank" rel="noopener">🧭 Open in Google Maps</a>`;
   }
 }
 
@@ -427,7 +504,7 @@ async function init(){
     Marker = mk.Marker || google.maps.Marker; Place = pl.Place; Circle = mapsLib.Circle;
 
     map = new Map($('#map'), {
-      center: BASE, zoom: 15, clickableIcons:false, gestureHandling:'cooperative',
+      center: BASE, zoom: 15, clickableIcons:false, gestureHandling:'greedy',
       mapTypeControl:false, streetViewControl:false, fullscreenControl:false,
       styles: MAP_STYLE,
     });
@@ -560,7 +637,7 @@ async function openDetail(idx){
   if(!loc){ openFallback(idx); return; }
   setActive(idx);
   const myToken = ++detailToken;
-  clearRoute();
+  teardownRouteUI();                 // opening a new place dismisses any open route view
   map.panTo({lat:loc.lat,lng:loc.lng}); map.setZoom(16);
   if(p._marker){ p._marker.setAnimation(google.maps.Animation.BOUNCE); setTimeout(()=>p._marker.setAnimation(null),700); }
 
@@ -611,7 +688,6 @@ async function openDetail(idx){
         ${place.websiteURI?`<a href="${place.websiteURI}" target="_blank" rel="noopener">🌐 Website</a>`:''}
         ${place.nationalPhoneNumber?`<a href="tel:${place.nationalPhoneNumber.replace(/\s/g,'')}">📞 Call</a>`:''}
       </div>
-      <div id="routeMount"></div>
       ${renderReviews(place.reviews)}`;
   }catch(e){ console.error(e);
     if(myToken!==detailToken) return;
@@ -677,11 +753,13 @@ function wireControls(){
   $('#toggles').addEventListener('click', e=>{ const b=e.target.closest('.toggle'); if(!b) return;
     const f=b.dataset.f, on=b.getAttribute('aria-pressed')!=='true'; b.setAttribute('aria-pressed',on); state.filters[f]=on; applyFilters(); });
   $('#closeBtn').addEventListener('click', closeDetail);
-  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDetail(); });
+  $('#routeBack').addEventListener('click', exitRouteMode);    // leave the full-map route view
+  $('#originToggle').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b) setRouteOrigin(b.dataset.o); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ routeMode ? exitRouteMode() : closeDetail(); } });
   $('#locateBtn').addEventListener('click', toggleLocate);
   $('#helpBtn').addEventListener('click', showHelp);
   $('#sharePicks').addEventListener('click', sharePicks);
-  map.addListener('click', closeDetail);                       // tap empty map to dismiss the card
+  map.addListener('click', ()=>{ if(!routeMode) closeDetail(); });   // tap empty map to dismiss the card (but not while viewing a route)
   map.addListener('dragstart', ()=>{ if(following){ following=false; $('#locateBtn').classList.remove('on'); } }); // stop GPS snap-back while you look around
 }
 
@@ -693,10 +771,20 @@ function toggleLocate(){
   stopLocate();                                                     // following → turn off
 }
 function startLocate(){
-  $('#locateBtn').classList.add('on'); following=true;
-  navigator.geolocation.getCurrentPosition(p=>{ updateUser(p); map.panTo({lat:p.coords.latitude,lng:p.coords.longitude}); map.setZoom(16); },
-    onGeoErr, {enableHighAccuracy:true, timeout:10000, maximumAge:5000});
-  watchId=navigator.geolocation.watchPosition(p=>updateUser(p,true), onGeoErr, {enableHighAccuracy:true, maximumAge:5000, timeout:12000});
+  $('#locateBtn').classList.add('on'); following=true; firstFix=true;
+  if(watchId==null){                                                 // one watcher; pan+zoom only on the very first fix (no double-snap)
+    watchId=navigator.geolocation.watchPosition(p=>{
+      updateUser(p, true);
+      if(firstFix){ firstFix=false; map.panTo({lat:p.coords.latitude,lng:p.coords.longitude}); if(map.getZoom()<16) map.setZoom(16); }
+    }, onGeoErr, {enableHighAccuracy:true, maximumAge:5000, timeout:12000});
+  }
+}
+// Make sure we have a location fix, then run cb (used by “route from my location”)
+function ensureLocation(cb){
+  if(userMarker){ cb && cb(); return; }
+  if(!navigator.geolocation){ toast('Your browser can’t share your location.'); return; }
+  pendingLoc = cb || null;
+  startLocate();
 }
 function stopLocate(){
   following=false; $('#locateBtn').classList.remove('on');
@@ -710,10 +798,14 @@ function updateUser(pos, follow){
     userMarker=new Marker({map,position:ll,zIndex:99999,title:'You are here',
       icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:'#1a73e8',fillOpacity:1,strokeColor:'#fff',strokeWeight:3}});
     accCircle=new Circle({map,center:ll,radius:acc,strokeColor:'#1a73e8',strokeOpacity:.4,strokeWeight:1,fillColor:'#1a73e8',fillOpacity:.12});
+    if(pendingLoc){ const cb=pendingLoc; pendingLoc=null; cb(); }     // resolve a “route from me” that was waiting on GPS
   } else { userMarker.setPosition(ll); accCircle.setCenter(ll); accCircle.setRadius(acc); }
   if(follow && following) map.panTo(ll);
 }
 function onGeoErr(err){ stopLocate();
+  if(pendingLoc){ pendingLoc=null;                                   // a “route from me” was waiting → fall back to the apartment
+    if(routeMode){ routeOrigin='base'; syncOriginToggle(); drawRoute(); toast('Couldn’t get your location — showing the route from your apartment.'); return; }
+  }
   if(err.code===1) toast('Location blocked. Allow location for this site to see your dot.');
   else if(location.protocol==='file:') toast('Live location needs the site hosted on https:// (see “How to use”).');
   else toast('Couldn’t get your location — try again outdoors.');
@@ -739,6 +831,7 @@ function showHelp(){
   $('#overlayBox').innerHTML=`<h2>How to use this map</h2>
     <ol>
       <li><b>Tap any place</b> (list or pin) for its Google rating, reviews, photos, hours and Directions.</li>
+      <li><b>“Show walking route here”</b> opens a full-screen map of the path. Switch between <b>🏠 from the apartment</b> and <b>📍 from where you are right now</b>, then tap <b>← Back</b> to return.</li>
       <li><b>Save favorites</b> with the ☆ star on each place, filter to <b>⭐ Favorites</b>, then tap <b>“Share my picks”</b> to send your shortlist to the group chat.</li>
       <li><b>Filter</b> with the chips (Attractions / Eat / Bars) and toggles (🌱 vegan, 🌅 view, 🚶 walkable).</li>
       <li><b>The ◎ button</b> shows your live location. Drag the map to look around; tap ◎ again to re-center on yourself.</li>
