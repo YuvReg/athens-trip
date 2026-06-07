@@ -113,6 +113,14 @@
   .badge.gold{background:#fff3df; color:#a76a12}
   .sharepicks{margin:10px 16px 0; width:calc(100% - 32px); padding:9px; border:1px solid var(--sea-2); background:#eef7fd; color:var(--sea); border-radius:10px; font-size:13px; font-weight:700; cursor:pointer}
   .sharepicks:hover{background:#e0f0fb}
+  .routebox{margin-top:14px; border-top:1px solid var(--line); padding-top:12px}
+  .routehead{font-weight:800; font-size:14px; margin-bottom:9px}
+  .routehead .from{font-weight:500; color:var(--muted); font-size:12.5px}
+  .step{display:flex; gap:9px; margin-bottom:9px}
+  .step .stepn{flex:none; width:20px;height:20px; border-radius:50%; background:#eef1f5; color:var(--sea); font-weight:700; font-size:11px; display:grid; place-items:center; margin-top:1px}
+  .step .stepi{font-size:12.8px; color:#3f586c; line-height:1.4}
+  .step .stepd{color:var(--muted); font-size:11.5px; margin-top:2px}
+  .routenote{font-size:12px; color:var(--muted); font-style:italic; margin-top:8px}
 
   /* ---------- Map ---------- */
   .mapwrap{position:relative; min-height:0}
@@ -336,7 +344,7 @@ if (KEY_OK) {
 
 /* ---------- State ---------- */
 let map, Place, Marker, Circle, infoBase, userMarker, accCircle, following=false, watchId=null, detailToken=0;
-let favs = new Set(), shareData = null;
+let favs = new Set(), shareData = null, dirService = null, dirRenderer = null;
 const state = { cat:'all', q:'', filters:{fav:false, vegan:false, view:false, walk:false}, active:null };
 const RES = {}; // index -> {id, lat, lng}  (resolved location)
 const CARD = {}; // index -> {rating, count, price}  (light info for list)
@@ -379,6 +387,27 @@ async function sharePlace(){
 }
 const isGoldenHour = () => { const h=new Date().getHours(); return h>=16 && h<21; }; // late-afternoon → sunset window
 
+/* ---------- In-site walking route (Directions API) ---------- */
+function clearRoute(){ if(dirRenderer) dirRenderer.setMap(null); }
+async function showRoute(idx){
+  const loc=RES[idx];
+  if(!loc || !dirService){ toast('Route isn’t available for this place.'); return; }
+  const mount=document.getElementById('routeMount');
+  if(mount) mount.innerHTML = `<div class="routebox"><div class="routehead">Loading route <span class="spin"></span></div></div>`;
+  const origin = userMarker ? userMarker.getPosition() : BASE;
+  const fromLabel = userMarker ? 'your location' : 'your apartment';
+  try{
+    const res = await dirService.route({ origin, destination:{lat:loc.lat,lng:loc.lng}, travelMode: google.maps.TravelMode.WALKING });
+    dirRenderer.setMap(map); dirRenderer.setDirections(res);
+    const leg = res.routes[0].legs[0];
+    const steps = leg.steps.map((s,i)=>`<div class="step"><span class="stepn">${i+1}</span><div><div class="stepi">${s.instructions||''}</div><div class="stepd">${s.distance?s.distance.text:''}</div></div></div>`).join('');
+    if(mount) mount.innerHTML = `<div class="routebox"><div class="routehead">🚶 ${leg.distance.text} · ${leg.duration.text} <span class="from">from ${fromLabel}</span></div>${steps}<div class="routenote">Not ideal? Tap “Open in Google Maps” above for live turn-by-turn.</div></div>`;
+    if(res.routes[0].bounds) map.fitBounds(res.routes[0].bounds, {top:40,bottom:40,left:40,right:40});
+  }catch(e){ console.error('route', e);
+    if(mount) mount.innerHTML = `<div class="routebox"><div class="routenote">Couldn’t load the in-site route (the Directions API may need to be switched on). Use “Open in Google Maps” above instead.</div></div>`;
+  }
+}
+
 /* ---------- Cache helpers (cuts API calls + speeds repeat visits) ---------- */
 const cacheGet = (k,maxAgeMs)=>{ try{const v=JSON.parse(localStorage.getItem(k)); if(!v) return null; if(maxAgeMs && v.t && (new Date().getTime()-v.t)>maxAgeMs) return null; return v.d;}catch(e){return null;} };
 const cacheSet = (k,d)=>{ try{localStorage.setItem(k,JSON.stringify({t:new Date().getTime(),d}));}catch(e){} };
@@ -388,10 +417,11 @@ async function init(){
   loadFavs();
   if (!KEY_OK){ showKeyOverlay(); buildList(); return; }
   try{
-    const [mapsLib, mk, pl] = await Promise.all([
+    const [mapsLib, mk, pl, routesLib] = await Promise.all([
       google.maps.importLibrary('maps'),
       google.maps.importLibrary('marker'),
       google.maps.importLibrary('places'),
+      google.maps.importLibrary('routes'),
     ]);
     const { Map, InfoWindow } = mapsLib;
     Marker = mk.Marker || google.maps.Marker; Place = pl.Place; Circle = mapsLib.Circle;
@@ -401,6 +431,9 @@ async function init(){
       mapTypeControl:false, streetViewControl:false, fullscreenControl:false,
       styles: MAP_STYLE,
     });
+    dirService = new routesLib.DirectionsService();
+    dirRenderer = new routesLib.DirectionsRenderer({ map, suppressMarkers:true, polylineOptions:{strokeColor:'#0e5a8a', strokeWeight:5, strokeOpacity:.85} });
+    dirRenderer.setMap(null);
 
     // Home base marker
     const homeMarker = new Marker({
@@ -527,6 +560,7 @@ async function openDetail(idx){
   if(!loc){ openFallback(idx); return; }
   setActive(idx);
   const myToken = ++detailToken;
+  clearRoute();
   map.panTo({lat:loc.lat,lng:loc.lng}); map.setZoom(16);
   if(p._marker){ p._marker.setAnimation(google.maps.Animation.BOUNCE); setTimeout(()=>p._marker.setAnimation(null),700); }
 
@@ -570,13 +604,14 @@ async function openDetail(idx){
       <div class="desc">${(place.editorialSummary&&place.editorialSummary.text)?esc(place.editorialSummary.text):p.blurb}</div>
       ${todayLine?`<div class="hours">🕒 Today: ${todayLine}</div>`:''}
       <div class="actions">
-        <a class="primary" href="${dir}" target="_blank" rel="noopener">🧭 Walking directions</a>
+        <button class="primary" onclick="showRoute(${idx})">🗺️ Show walking route here</button>
+        <a href="${dir}" target="_blank" rel="noopener">🧭 Open in Google Maps</a>
         <a href="${appleDir}" target="_blank" rel="noopener">🍎 Apple Maps</a>
-        <a href="${rUri}" target="_blank" rel="noopener">📍 Google Maps</a>
         <button onclick="sharePlace()">📤 Share</button>
         ${place.websiteURI?`<a href="${place.websiteURI}" target="_blank" rel="noopener">🌐 Website</a>`:''}
         ${place.nationalPhoneNumber?`<a href="tel:${place.nationalPhoneNumber.replace(/\s/g,'')}">📞 Call</a>`:''}
       </div>
+      <div id="routeMount"></div>
       ${renderReviews(place.reviews)}`;
   }catch(e){ console.error(e);
     if(myToken!==detailToken) return;
@@ -619,7 +654,7 @@ function setActive(idx){
 function closeDetail(){
   $('#detail').classList.remove('open');
   if(state.active!=null && els[state.active]) els[state.active].classList.remove('active');
-  state.active=null; detailToken++; // drop any in-flight detail render
+  state.active=null; detailToken++; clearRoute(); // drop any in-flight detail render + clear route line
 }
 function openFallback(idx){
   const p=PLACES[idx], cd=CAT[p.cat]; setActive(idx);
