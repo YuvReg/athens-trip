@@ -25,7 +25,8 @@
     --sea:#0e5a8a; --sea-2:#1e88c7;
     --ink:#15293a; --muted:#5c7488; --line:#e4ecf2;
     --bg:#f4f9fc; --card:#ffffff;
-    --attraction:#2d7dd2; --restaurant:#2e9e5b; --bar:#8e44ad; --home:#e8772e; --practical:#6b7a8d;
+    --attraction:#2d7dd2; --restaurant:#2e9e5b; --bar:#8e44ad; --home:#e8772e;
+    --shop:#8d6e4f; --transit:#0e98b0; --money:#64748b; --bites:#dc4b4b;   /* the 4 "essentials" groups, each its own pin colour */
     --gold:#f2b01e; --shadow:0 6px 24px rgba(16,46,72,.12);
     --r:16px;
   }
@@ -77,7 +78,10 @@
   .chip[data-cat="attraction"][aria-pressed="true"]{background:var(--attraction)}
   .chip[data-cat="restaurant"][aria-pressed="true"]{background:var(--restaurant)}
   .chip[data-cat="bar"][aria-pressed="true"]{background:var(--bar)}
-  .chip[data-cat="practical"][aria-pressed="true"]{background:var(--practical)}
+  .chip[data-cat="shop"][aria-pressed="true"]{background:var(--shop)}
+  .chip[data-cat="transit"][aria-pressed="true"]{background:var(--transit)}
+  .chip[data-cat="money"][aria-pressed="true"]{background:var(--money)}
+  .chip[data-cat="bites"][aria-pressed="true"]{background:var(--bites)}
   .toggles{display:flex; gap:8px; margin-top:9px; flex-wrap:wrap}
   .toggle{
     font-size:12.5px; font-weight:600; color:var(--muted); border:1px dashed var(--line); background:#fff;
@@ -265,7 +269,10 @@
           <button class="chip" data-cat="attraction" aria-pressed="false"><span class="dot" style="background:var(--attraction)"></span>Attractions</button>
           <button class="chip" data-cat="restaurant" aria-pressed="false"><span class="dot" style="background:var(--restaurant)"></span>Eat</button>
           <button class="chip" data-cat="bar" aria-pressed="false"><span class="dot" style="background:var(--bar)"></span>Bars</button>
-          <button class="chip" data-cat="practical" aria-pressed="false"><span class="dot" style="background:var(--practical)"></span>🛒 Essentials</button>
+          <button class="chip" data-cat="shop" aria-pressed="false"><span class="dot" style="background:var(--shop)"></span>🛒 Shops</button>
+          <button class="chip" data-cat="transit" aria-pressed="false"><span class="dot" style="background:var(--transit)"></span>🚆 Transit</button>
+          <button class="chip" data-cat="money" aria-pressed="false"><span class="dot" style="background:var(--money)"></span>🏧 Money</button>
+          <button class="chip" data-cat="bites" aria-pressed="false"><span class="dot" style="background:var(--bites)"></span>🍴 Quick bites</button>
         </div>
         <div class="toggles" id="toggles">
           <button class="toggle" data-f="fav" aria-pressed="false">⭐ Favorites</button>
@@ -299,7 +306,10 @@
         <div><span class="d" style="background:var(--attraction)"></span> Attractions</div>
         <div><span class="d" style="background:var(--restaurant)"></span> Restaurants</div>
         <div><span class="d" style="background:var(--bar)"></span> Bars</div>
-        <div><span class="d" style="background:var(--practical)"></span> Essentials</div>
+        <div><span class="d" style="background:var(--shop)"></span> Shops</div>
+        <div><span class="d" style="background:var(--transit)"></span> Transit</div>
+        <div><span class="d" style="background:var(--money)"></span> Money</div>
+        <div><span class="d" style="background:var(--bites)"></span> Quick bites</div>
       </div>
       <div class="measurebox" id="measureBox" hidden>
         <span id="measureTotal">Tap the map to start measuring</span>
@@ -339,7 +349,9 @@
    are always current. "query" is what we ask Google to find.
 
    Editing cheat-sheet (safe for non-coders):
-   • cat   : 'attraction' | 'restaurant' | 'bar' | 'practical'
+   • cat   : 'attraction' | 'restaurant' | 'bar' | 'shop' | 'transit' | 'money' | 'bites'
+             (the last 4 are the split "essentials": shop=supermarket/pharmacy,
+              transit=metro+bus, money=banks+exchange, bites=quick eats/coffee)
    • tags  : optional list — 'must','view','sunset','ride','beach','sport'
              ('ride'/'beach' = it's a trip out, shown as tram/taxi not a walk)
    • vegan : restaurants only — 'full' (100% vegan) | 'options' (good vegan picks)
@@ -417,24 +429,35 @@ const PLACES = [
   {cat:'bar', name:'Bolivar Beach Bar', query:'Bolivar Beach Bar, Alimos', book:'https://www.i-host.gr/Reservations/New?restaurant=2113&channel=website&lang=eng', area:'Alimos', tags:['beach','ride','view'], wa:'+30 697 036 7684', blurb:'Iconic palm-fringed beach club — DJ sunsets that roll into a dance floor. Closest Riviera beach bar to the centre.'},
   {cat:'restaurant', name:'Krabo', query:'Krabo, Vouliagmeni', book:'https://krabo.gr/reservations/', area:'Vouliagmeni', price:'€€€', tags:['beach','ride','view'], blurb:'Secluded wood-and-wicker beach restaurant on the sand with Astir views — sunset dinner that becomes a cool beach club.'},
 
-  // ---- ESSENTIALS / PRACTICAL (everyday stuff near the apartment — 🛒) ----
-  {cat:'practical', name:'Sklavenitis Supermarket', query:'Sklavenitis Supermarket, Athinas, Athens', area:'Omonia', blurb:'Big mainstream supermarket for a proper shop — ~7 min toward Omonia.'},
-  {cat:'practical', name:'Varvakios Central Market', query:'Varvakios Agora, Athens', area:'Omonia', blurb:'Athens’ historic food market — fresh produce, fish, cheese, olives. A sight in itself, ~6 min.'},
-  {cat:'practical', name:'Pharmacy (nearest)', query:'Pharmacy, Plateia Eleftherias, Athens', area:'Koumoundourou Sq', blurb:'Closest pharmacy. At night, pharmacies rotate duty — dial 11888 or check vrisko.gr for the one open now.'},
-  {cat:'practical', name:'Metaxourgeio Metro (Line 2)', query:'Metaxourgeio Metro Station', area:'Metaxourgeio', blurb:'Your closest metro (~7 min) — Red Line 2 across the city.'},
-  {cat:'practical', name:'Monastiraki Metro (Lines 1 & 3)', query:'Monastiraki Metro Station', area:'Monastiraki', blurb:'~9 min — Blue Line 3 runs direct to the airport; Green Line 1 to Piraeus port.'},
-  {cat:'practical', name:'Omonia Metro (Lines 1 & 2)', query:'Omonia Metro Station', area:'Omonia', blurb:'Central hub ~7 min — Green Line 1 + Red Line 2 interchange.'},
-  {cat:'practical', name:'O Thanasis (late souvlaki)', query:'O Thanasis, Mitropoleos 69, Athens', area:'Monastiraki', blurb:'Classic kebab/souvlaki open till ~2am — reliable late-night feed, ~9 min.'},
-  {cat:'practical', name:'Elvis (late-night gyros)', query:'Elvis souvlaki, Psyrri, Athens', area:'Psyrri', blurb:'Tiny local souvlaki joint open very late — perfect post-bar, just a few min away.'},
-  {cat:'practical', name:'Taf Coffee (specialty coffee)', query:'Taf Coffee, Emmanouil Benaki 7, Athens', area:'Center', blurb:'Award-winning specialty roastery for a morning espresso or freddo — ~6 min toward Exarchia. (Replaces Dope Roasting, now closed.)'},
-  {cat:'practical', name:'ATM — National Bank', query:'National Bank of Greece, Omonia, Athens', area:'Omonia', blurb:'Bank ATM in the centre — lower fees than the random street “Euronet” machines.'},
+  // ---- SHOPS & PHARMACY (everyday needs near the apartment — 🛒) ----
+  {cat:'shop', name:'Sklavenitis Supermarket', query:'Sklavenitis Supermarket, Athinas, Athens', area:'Omonia', blurb:'Big mainstream supermarket for a proper shop — ~7 min toward Omonia.'},
+  {cat:'shop', name:'Varvakios Central Market', query:'Varvakios Agora, Athens', area:'Omonia', blurb:'Athens’ historic food market — fresh produce, fish, cheese, olives. A sight in itself, ~6 min.'},
+  {cat:'shop', name:'Pharmacy (nearest)', query:'Pharmacy, Plateia Eleftherias, Athens', area:'Koumoundourou Sq', blurb:'Closest pharmacy. At night, pharmacies rotate duty — dial 11888 or check vrisko.gr for the one open now.'},
+
+  // ---- TRANSIT (your metros + the 24h airport bus — 🚆) ----
+  {cat:'transit', name:'Metaxourgeio Metro (Line 2)', query:'Metaxourgeio Metro Station', area:'Metaxourgeio', blurb:'Your closest metro (~7 min) — Red Line 2 across the city.'},
+  {cat:'transit', name:'Monastiraki Metro (Lines 1 & 3)', query:'Monastiraki Metro Station', area:'Monastiraki', blurb:'~9 min — Blue Line 3 runs direct to the airport; Green Line 1 to Piraeus port.'},
+  {cat:'transit', name:'Omonia Metro (Lines 1 & 2)', query:'Omonia Metro Station', area:'Omonia', blurb:'Central hub ~7 min — Green Line 1 + Red Line 2 interchange.'},
+  {cat:'transit', name:'Airport Bus X95 (Syntagma)', query:'X95 Airport Express Bus, Syntagma Square, Athens', area:'Syntagma', blurb:'Airport Express X95 — runs 24/7, flat €5.50, ~40–90 min to/from the airport. Catch it on the south side of Syntagma Sq (Othonos St, by the CHUNXI restaurant); buy the ticket at the kiosk.'},
+
+  // ---- MONEY (banks, ATMs + currency exchange — 🏧) ----
+  {cat:'money', name:'ATM — National Bank', query:'National Bank of Greece, Omonia, Athens', area:'Omonia', blurb:'Bank ATM in the centre — lower fees than the random street “Euronet” machines. For euros off your card, a bank ATM like this beats the cash-exchange desks.'},
+  {cat:'money', name:'ONExchange (currency exchange)', query:'Onexchange, Karagiorgi Servias 4, Athens', area:'Syntagma', blurb:'Trusted no-commission cash exchange at Syntagma — change physical USD → EUR notes. Long hours, 7 days. Always ask the NET euros you’ll get before handing over cash.'},
+
+  // ---- QUICK BITES & COFFEE (grab-and-go near the apartment — 🍴) ----
+  {cat:'bites', name:'O Thanasis (late souvlaki)', query:'O Thanasis, Mitropoleos 69, Athens', area:'Monastiraki', blurb:'Classic kebab/souvlaki open till ~2am — reliable late-night feed, ~9 min.'},
+  {cat:'bites', name:'Elvis (late-night gyros)', query:'Elvis souvlaki, Psyrri, Athens', area:'Psyrri', blurb:'Tiny local souvlaki joint open very late — perfect post-bar, just a few min away.'},
+  {cat:'bites', name:'Taf Coffee (specialty coffee)', query:'Taf Coffee, Emmanouil Benaki 7, Athens', area:'Center', blurb:'Award-winning specialty roastery for a morning espresso or freddo — ~6 min toward Exarchia. (Replaces Dope Roasting, now closed.)'},
 ];
 
 const CAT = {
   attraction:{label:'Attraction', color:'#2d7dd2'},
   restaurant:{label:'Restaurant', color:'#2e9e5b'},
   bar:{label:'Bar', color:'#8e44ad'},
-  practical:{label:'Essentials', color:'#6b7a8d'},
+  shop:{label:'Shops', color:'#8d6e4f'},
+  transit:{label:'Transit', color:'#0e98b0'},
+  money:{label:'Money', color:'#64748b'},
+  bites:{label:'Quick bite', color:'#dc4b4b'},
 };
 
 /* ---------- Load Google Maps (only if a real key is present) ---------- */
