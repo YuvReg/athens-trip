@@ -74,7 +74,7 @@ stale — Google is the chosen path.
 
 | Piece | What it means | Status |
 |---|---|---|
-| **Content** | Curated attractions, bars, vegan-friendly restaurants, beach/Riviera spots, football bars & practical pins | ✅ Done — 65 places (21 attractions incl. 4 beach, 19 bars incl. 4 football, 15 restaurants, 10 essentials) |
+| **Content** | Curated attractions, bars, vegan-friendly restaurants, beach/Riviera spots, football bars & practical pins | ✅ Done — 63 places (21 attractions incl. 4 beach, 18 bars incl. 3 football, 14 restaurants, 10 essentials). Count dropped 65→63 after a closure/rebrand sweep (removed Crudo + Beer Academy; renamed/repointed Mariloulou, Mama Tierra, Taf Coffee). |
 | **The map + pins** | Google Map with a colored pin per place, grouped by category | ✅ Built (classic `google.maps.Marker`) |
 | **Pin info cards** | Tap a pin → card with Google rating, reviews, photos, hours, directions | ✅ Built |
 | **Live location** | Map shows the user's live position and can follow them | ✅ Built (works on the hosted https link) |
@@ -272,7 +272,8 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
 > Update this section as work progresses so anyone opening the project knows
 > where things stand.
 
-- [x] Curated places — 65 total (21 attractions incl. 4 beach, 19 bars incl. 4 football, 15 restaurants, 10 essentials)
+- [x] Curated places — 63 total (21 attractions incl. 4 beach, 18 bars incl. 3 football, 14 restaurants, 10 essentials)
+- [x] **Data accuracy sweep (closures/rebrands)** via `_pwtest/audit.mjs` (compares each place's live Google name + `businessStatus` to ours): renamed Los Vegans→**Mariloulou**, repointed **Mama Tierra**→Acropolis branch, **Dope Roasting**→**Taf Coffee**, removed **Crudo** (now a fish taverna) + **Beer Academy** (→"beertime", unverified for football); kept **six d.o.g.s** (Google "closed" flag is stale). Re-run `audit.mjs` before a trip to re-check. Temp-closed to watch: Kerameikos, Avocado, A for Athens, Holy Spirit.
 - [x] Place lookup wired (live via `Place.searchByText` + `localStorage` cache — no stored IDs)
 - [x] `index.html` map with Google Maps + color-coded pins + 🏠 home base
 - [x] Inline info cards (live rating, reviews, photos, hours)
@@ -291,7 +292,7 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
 - [x] **Smart filters** — chips Attractions / Eat / Bars / 🛒 Essentials + context toggles
       (⭐ favorites, 🟢 open now, 🌱 fully vegan, 🥗 vegan options, ⚽ football, 🏖️ beach, 🌅 view, 🚶 walkable)
 - [x] **Beach / Riviera** spots (Glyfada / Vouliagmeni / Alimos) — far places show tram/taxi + Google-Maps transit hand-off
-- [x] **Football bars** for the World Cup (Athens Sports Bar, James Joyce, Lucky Sparrow, Beer Academy — web-verified)
+- [x] **Football bars** for the World Cup (Athens Sports Bar, James Joyce, Lucky Sparrow — web-verified; Beer Academy dropped in the accuracy sweep)
 - [x] **Open now** badges + filter (Athens-time, computed from cached opening hours, lazy-fetched)
 - [x] **Practical pins** (supermarket, central market, pharmacy, metros, late-night food, coffee, ATM)
 - [x] **API key created, restricted (referrer + APIs), quota-capped** by the user
