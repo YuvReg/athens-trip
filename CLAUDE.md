@@ -136,11 +136,15 @@ etc. are **resolved live at runtime** by `Place.searchByText(query)` and then
 ### Map behavior (as built)
 - Centered on the home base (§2) at a walking-distance zoom.
 - Pins **color-coded by category** (attractions / restaurants / bars / 🛒 essentials).
-- A **🏠 orange home-base marker** for the apartment; distances/walk-times are
-  measured from there.
+- A **🏠 house-shaped home marker** for the apartment (an inline-SVG icon, not a
+  plain dot); tap it to draw a walking route home from your live location.
+  Distances/walk-times are measured from there.
 - Tapping a pin (or a list item) opens the inline info card with live Google
   rating, reviews, photos, hours + Walking-route / Call / Website buttons.
-- A **◎ "locate me"** control + live blue dot via geolocation `watchPosition`.
+- Three stacked map controls (bottom-right): **◎ locate me** (live blue dot via
+  geolocation `watchPosition`), **🏠 walk-me-home** (routes to the apartment from
+  your live location — origin is always "you", so the from/to switch is hidden),
+  and **📏 ruler** (tap 2+ points to measure walking distance; reuses `haversine`).
 - **Filters (smart / context-sensitive):** category chips Attractions / Eat /
   Bars / 🛒 Essentials; always-on toggles ⭐ favorites, 🟢 open now, 🚶 walkable;
   plus context toggles that appear only for their category — 🌱 fully vegan &
@@ -274,6 +278,10 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
 - [x] **In-site walking route** — tap "Show walking route here" → full-screen map +
       turn-by-turn, with a **🏠 from apartment / 📍 from my location** origin switch
       and a ← Back button (Directions API; falls back to Google Maps if it ever fails)
+- [x] **🏠 House home-marker + walk-me-home + 📏 ruler** — apartment is a house-shaped
+      inline-SVG marker; tap it OR the new 🏠 button (stacked above ◎ locate, bottom-right)
+      to route home from your live location; 📏 ruler button measures distance between
+      tapped points (`haversine`). Verified live on desktop + iPhone (0 console errors), 2026-06-08.
 - [x] **Smart filters** — chips Attractions / Eat / Bars / 🛒 Essentials + context toggles
       (⭐ favorites, 🟢 open now, 🌱 fully vegan, 🥗 vegan options, ⚽ football, 🏖️ beach, 🌅 view, 🚶 walkable)
 - [x] **Beach / Riviera** spots (Glyfada / Vouliagmeni / Alimos) — far places show tram/taxi + Google-Maps transit hand-off
