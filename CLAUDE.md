@@ -132,6 +132,10 @@ etc. are **resolved live at runtime** by `Place.searchByText(query)` and then
   book: "https://reservation-url",             // optional (restaurants/bars); a verified online-booking
                                                //   link (TheFork / e-restaurants / venue site). OMIT if
                                                //   walk-in/phone-only → card shows greyed "No online booking"
+  wa: "+30 698 156 3511",                      // optional (restaurants/bars); the venue's VERIFIED WhatsApp
+                                               //   number — a Greek +30 69… mobile. Shows a 💬 WhatsApp button
+                                               //   that works on WiFi. OMIT → greyed "No WhatsApp". Landlines
+                                               //   (+30 21…) are NOT on WhatsApp — never put one here.
   blurb: "Our own one-line write-up / why it's worth it"
 }
 ```
@@ -143,7 +147,11 @@ etc. are **resolved live at runtime** by `Place.searchByText(query)` and then
   plain dot); tap it to draw a walking route home from your live location.
   Distances/walk-times are measured from there.
 - Tapping a pin (or a list item) opens the inline info card with live Google
-  rating, reviews, photos, hours + Walking-route / Call / Website buttons.
+  rating, reviews, photos, hours + Walking-route / 💬 WhatsApp / Website buttons.
+  (The old `tel:` **Call** button was removed — the group is on WiFi only and can't
+  make cellular calls; WhatsApp messaging/calls work over WiFi. Restaurant/bar cards
+  show a green WhatsApp button where the venue has a verified `wa` number, else a
+  greyed "No WhatsApp". See the `wa` field above + §10.)
 - Three stacked map controls (bottom-right): **◎ locate me** (live blue dot via
   geolocation `watchPosition`), **🏠 walk-me-home** (routes to the apartment from
   your live location — origin is always "you", so the from/to switch is hidden),
@@ -283,8 +291,14 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
       turn-by-turn, with a **🏠 from apartment / 📍 from my location** origin switch
       and a ← Back button (Directions API; falls back to Google Maps if it ever fails)
 - [x] **🍽️ "Book a table" button** on restaurant/bar cards — active reservation link when the place has
-      verified online booking (`book` field; 6 set: Los Vegans/Avocado on e-restaurants, Krabo/Bolivar/360/MoMix
-      on own sites), else greyed "No online booking". Header personalised to "Athens ~ Gazi Al Tadlik Et Duma".
+      verified online booking (`book` field; 6 set: Line/Noel/Bolivar on i-host, MoMix/360/Krabo on own
+      sites), else greyed "No online booking". Header personalised to "Athens ~ Gazi Al Tadlik Et Duma".
+- [x] **💬 WhatsApp contact button** — replaces the old `tel:` Call on restaurant/bar cards (the group is
+      WiFi-only and can't make cellular calls; WhatsApp works over WiFi). Green `wa.me` deep link where the
+      venue has a VERIFIED WhatsApp mobile (`wa` field; 5 set: The Place, Kokkion, The Bar in Front of the
+      Bar, The Lucky Sparrow, Bolivar), else greyed "No WhatsApp". Most Athens spots are landline-only (NOT
+      on WhatsApp) — each `wa` verified per-venue from its own IG/site; landlines (+30 21…) never qualify.
+      Verified live desktop + iPhone (0 console errors), 2026-06-08.
 - [x] **🏠 House home-marker + walk-me-home + 📏 ruler** — apartment is a house-shaped
       inline-SVG marker; tap it OR the new 🏠 button (stacked above ◎ locate, bottom-right)
       to route home from your live location; 📏 ruler button measures distance between
