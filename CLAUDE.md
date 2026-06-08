@@ -88,8 +88,12 @@ stale — Google is the chosen path.
 > The old Netlify link https://gazi-haftaat-hatiul.netlify.app still works as a
 > backup but is **no longer deployed to** (Netlify's new per-deploy "credits"
 > were burning the free allowance — see §7). The Google API key is created,
-> restricted (referrer allows **both** `*.netlify.app/*` and `yuvreg.github.io/*`),
-> and quota-capped. The live checklist is §10; the user-facing setup guide is `SETUP.md`.
+> restricted (referrer allows **both** `*.netlify.app/*` and `yuvreg.github.io/*`)
+> and API-restricted. 💡 **There is no daily quota cap — and that's fine:** free-trial
+> accounts can't set one (Adjustable: No) and budget alerts don't cap spend, but the trial
+> **never auto-charges** — it just pauses at $0 / 90 days unless someone manually clicks
+> "Activate." So the $0 is guaranteed by simply not upgrading (see §6). The live checklist
+> is §10; setup guide is `SETUP.md`.
 
 ---
 
@@ -185,21 +189,36 @@ The user is (reasonably) worried about a surprise bill. These rules keep it at
 - **Restrict the key to only the APIs we use** (Maps JavaScript, Places **(New)**,
   and **Directions API** — Directions powers the in-site walking-route preview; it
   has its own generous free tier and stays $0 at our volume).
-- **Set a hard daily quota cap** in Google Cloud Console (e.g. ~1,000
-  requests/day). If somehow hit, the API just stops responding — **it cannot
-  generate a charge.** Worst case = "map stops loading for a day," never a bill.
+- **The free trial is the hard ceiling — and it's bill-proof by design (verified
+  2026-06-08).** On a Google Cloud *free-trial* account you **cannot** lower API
+  quotas (the console shows them as **Adjustable: No**), and a **Billing budget alert
+  only emails you — it does NOT cap spend** (Google's own words: "Setting a budget does
+  not cap resource or API consumption"). So the real $0 guarantee is the trial itself:
+  **Google never auto-charges a trial.** When the credit (~$300) or the 90 days runs
+  out, the APIs simply **pause** until someone *manually* clicks **"Activate" /
+  "Upgrade my account."** As long as nobody clicks Activate, a bill is impossible —
+  worst case the map stops loading. **The one rule: don't click Activate.** (A settable
+  daily cap only appears *after* upgrading to paid, so it's not a trip-time tool.)
 - At our scale (4 people, a few dozen places, one week) usage is a rounding
-  error against the free tier.
+  error against the free tier. The bigger real-world spender was **live testing**
+  (each Playwright run re-fetching all places) — now cached down to ~₪1–2/run (see §10).
 
 ### Legal / terms
-- **Do NOT permanently store Google's ratings, reviews, or photos** in our code
-  or files. Google's terms require this content to be **fetched live**. We may
-  store our own notes and the **Place ID** only. Fetching live is free at our
-  volume, so this costs nothing — just build it the clean way.
+- **Do NOT permanently store Google's review text or photos** — Google's terms
+  require those to be **fetched live**, and the app does (on every card-open, never
+  stored). We may keep our own notes + the **Place ID** (indefinitely), and may
+  **temporarily cache other place data (coordinates, the numeric rating/price, opening
+  hours) for up to 30 days** — Google's allowed caching window. That's exactly what the
+  runtime `localStorage` cache does (`ath_card` ratings now cached **30 days** as of
+  2026-06-08, `ath_hours` 7 days, coords long-term), and it's what keeps both real
+  usage and our test runs near-$0. Fetching the live bits is free at our volume.
 
 ### The API key itself
 - The key is **the user's to create** (needs their Google login + a card on
-  file to enable billing — which stays at $0 via the caps above).
+  file for **identity verification — not** auto-billing during the trial). It stays
+  at **$0** from the tiny real usage, the domain-locked key, and above all the
+  **trial's no-auto-charge design** (see the cost-safety note above — *don't click
+  Activate* is the actual bill-proofing; a settable cap isn't available on the trial).
 - **Never hardcode a real key into a committed file** without the user's
   go-ahead, and never share it publicly. Use a clearly-marked placeholder like
   `YOUR_GOOGLE_MAPS_API_KEY` until the user pastes theirs in.
@@ -314,7 +333,9 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
 - [x] **Open now** badges + filter (Athens-time, computed from cached opening hours, lazy-fetched)
 - [x] **Essentials split into 4 categories** (2026-06-08) — 🛒 Shops (supermarket, central market, pharmacy), 🚆 Transit (3 metros + the NEW 24/7 Airport Bus X95 at Syntagma), 🏧 Money (National Bank ATM + NEW ONExchange currency exchange for USD→EUR cash), 🍴 Quick bites (late-night souvlaki/gyros + Taf Coffee). Each its own top-level chip + map-pin colour; +2 web-verified pins. Verified live desktop + iPhone (0 console errors).
 - [x] **Within-1 km expansion (+27 → 92 places)** (2026-06-08) — found NEW spots near the apartment and added those meeting the user's rules: **11 shops/pharmacies** (no rating bar — 4 supermarkets, Hondos/Ermou/Attica, 4 pharmacies incl. Bakakos & Bartzis), **12 restaurants** (6 vegan + 6 top-rated **non-vegan**) and **4 bars** (Cinque, BackdooR, Old Fashioned, Bad Tooth) — restaurants/bars all **Google ≥4.6**. Non-vegan restaurants show a 🍖 "not vegan" badge. Verified live desktop + iPhone (0 console errors).
-- [x] **API key created, restricted (referrer + APIs), quota-capped** by the user
+- [x] **API key created + restricted (HTTP referrer + APIs)** by the user
+- [x] **$0 safety nailed down (2026-06-08):** free-trial accounts CAN'T set a quota cap (console shows Adjustable: No) and budget alerts don't cap spend — but the trial **never auto-charges**: it pauses at $0 / 90 days unless someone manually clicks "Activate" / "Upgrade." The one rule: **don't click Activate.** (User also set a budget alert for visibility.)
+- [x] **Test-run cost slashed (2026-06-08):** `_pwtest/pwtest.mjs` is now **iPhone-only** (no desktop pass) with a saved `storageState` cache + a live 💰 cost meter — a cold run made **294** Places calls, a warm run only **36** (~₪25 → ~₪1–2 per run). Rating cache bumped 1→30 days so warm runs stay cheap across days.
 - [x] **Hosted on HTTPS** → **https://yuvreg.github.io/athens-trip/** (GitHub Pages — primary,
       free-forever, publish = `git push`). Old https://gazi-haftaat-hatiul.netlify.app kept as backup.
       Verified working on the github.io link (desktop + iPhone, 0 console errors) on 2026-06-08.
