@@ -84,23 +84,24 @@ This guide has 4 short parts. Total time: **about 15 minutes**, once.
 
 ---
 
-## Part 3 — Put it online so all 4 phones can use it (~3 min)
+## Part 3 — Your site is already online (just share the link)
 
 The live "blue dot" (your location) only works when the page is online with an `https://`
-address — that's a privacy rule in every phone. Hosting is **free** and takes a moment.
+address — that's a privacy rule in every phone. **Good news: your site is already hosted,
+free, on GitHub Pages — nothing to do here.**
 
-**Easiest option — Netlify Drop (no account needed to start):**
-1. Go to **https://app.netlify.com/drop**
-2. Drag this **whole folder** (`trip to athens`) onto the page.
-3. Wait a few seconds. Netlify gives you a link like
-   `https://shiny-athens-1234.netlify.app` — **that's your website.** Open it on your phone,
-   share it in the group chat. Done.
+- **Your website link — share this in the group chat:**
+  **https://yuvreg.github.io/athens-trip/**
+- Open it on all 4 phones, add it to the home screen, and you're set.
+- **Updates are automatic and free forever:** when a change is saved to the project on
+  GitHub, the live link refreshes itself in about a minute. No re-uploading, no usage
+  limits, no cost.
 
-*(Other free options that also give https: GitHub Pages, Vercel, Cloudflare Pages. Netlify
-Drop is the fastest.)*
-
-> **Tip:** If you change `index.html` later (e.g. add a place), just drag the folder onto
-> Netlify Drop again to update it.
+> **Why GitHub Pages and not Netlify?** We started on Netlify, but Netlify now charges
+> "credits" every time the site is re-published, and testing ate almost the whole monthly
+> free allowance. GitHub Pages re-publishes for **free, unlimited.** The old Netlify link
+> (https://gazi-haftaat-hatiul.netlify.app) still works as a backup, but the GitHub link
+> above is the main one.
 
 ---
 
@@ -110,12 +111,13 @@ This stops anyone else from using your key, and makes a surprise bill effectivel
 
 1. Back in Google Cloud: **APIs & Services → Credentials → click your key's name.**
 2. Under **Application restrictions**, choose **Websites**, then click **Add** and enter your
-   Netlify address with `/*` on the end, e.g.:
+   site address(es) with `/*` on the end. The live site uses:
    ```
-   shiny-athens-1234.netlify.app/*
+   https://yuvreg.github.io/*
    ```
-   *(Or, simpler, `*.netlify.app/*` to cover any Netlify address.)* This means the key only
-   works *from your site* — a copied key is useless to anyone else.
+   *(the old backup `*.netlify.app/*` is also kept in the list — leave it).* This means the
+   key only works *from your site* — a copied key is useless to anyone else. **This is already
+   set up** (the github.io line was added on 2026-06-08).
 3. Under **API restrictions**, choose **Restrict key** and tick only:
    **Maps JavaScript API** and **Places API (New)**. Click **Save**.
 4. **Peace-of-mind cap (optional but recommended):** go to **Billing → Budgets & alerts →

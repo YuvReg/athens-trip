@@ -79,10 +79,14 @@ stale — Google is the chosen path.
 | **Pin info cards** | Tap a pin → card with Google rating, reviews, photos, hours, directions | ✅ Built |
 | **Live location** | Map shows the user's live position and can follow them | ✅ Built (works on the hosted https link) |
 
-> **Current overall status:** the site is **built, deployed, and live** at
-> https://gazi-haftaat-hatiul.netlify.app. The Google API key is created,
-> restricted, and quota-capped, and the site has been verified on desktop +
-> iPhone. The live checklist is §10; the user-facing setup guide is `SETUP.md`.
+> **Current overall status:** the site is **built, live, and verified** (desktop +
+> iPhone, zero console errors) at **https://yuvreg.github.io/athens-trip/** —
+> **GitHub Pages is now the primary host** (free forever; publishing = `git push`).
+> The old Netlify link https://gazi-haftaat-hatiul.netlify.app still works as a
+> backup but is **no longer deployed to** (Netlify's new per-deploy "credits"
+> were burning the free allowance — see §7). The Google API key is created,
+> restricted (referrer allows **both** `*.netlify.app/*` and `yuvreg.github.io/*`),
+> and quota-capped. The live checklist is §10; the user-facing setup guide is `SETUP.md`.
 
 ---
 
@@ -105,8 +109,9 @@ array near the top (search the file for `const PLACES`) — that's the part the
 user edits to add/remove/fix a spot.
 
 **Local-only helper folders** (git-ignored, safe to delete — they're not part of
-the site): `_site/` (the copy pushed to Netlify on deploy), `_pwtest/` (the
-Playwright test script + screenshots), `.netlify/` (Netlify CLI state).
+the site): `_site/` (legacy Netlify publish dir — **no longer used**; GitHub Pages
+serves `index.html` straight from the repo root), `_pwtest/` (the Playwright test
+script + screenshots), `.netlify/` (legacy Netlify CLI state).
 
 ### The "places" data shape (as actually built — keep this consistent)
 Each place is one object in the `PLACES` array. We store only OUR own notes + a
@@ -187,13 +192,31 @@ The user is (reasonably) worried about a surprise bill. These rules keep it at
 The live location dot **only works over HTTPS** (a browser privacy rule). So the
 finished page must be **hosted**, not just emailed around.
 
-- **Free + ~2 minutes:** Netlify Drop, GitHub Pages, or Vercel. Drag the file
-  in → get an `https://` link → open it on all 4 phones.
+### Current host: GitHub Pages (the live link the group uses)
+- **Live link:** **https://yuvreg.github.io/athens-trip/** — served by **GitHub
+  Pages** from the repo `YuvReg/athens-trip` (branch `main`, root folder). The repo
+  is **public** (safe: the only key in it is the referrer-restricted, public-by-design
+  Maps key — already visible on any live Maps site).
+- **How we publish now (THE deploy path — do this, nothing else):** edit
+  `index.html` → `git add -A && git commit && git push`. GitHub Pages **auto-rebuilds
+  in ~1 min**. That's it. **Cost = $0, unlimited, forever.** No CLI, no `_site/` copy,
+  no per-deploy cost.
+- **⚠️ Do NOT deploy to Netlify anymore.** Netlify switched to a per-deploy "credits"
+  model and ~14 test deploys burned almost the whole monthly free allowance
+  (210 credits). It never charged money (free plan, no card → it just pauses), but
+  it's a needless limit. The old Netlify link
+  (https://gazi-haftaat-hatiul.netlify.app) is kept **only as a read-only backup** —
+  leave it serving, don't push new deploys to it.
+
 - **Caveat (important):** once the API key is referrer-restricted to the hosted
   domain (which it is), **opening `index.html` directly from disk (`file://`) will
   make Google reject the map with a 403** — a `file://` page sends no HTTP referrer
-  for the key to match. So in practice everyone must use the **hosted Netlify link**,
-  not the raw file. (Before the key is restricted, the file opens fine locally.)
+  for the key to match. So in practice everyone must use the **hosted GitHub Pages
+  link**, not the raw file. (Before the key is restricted, the file opens fine locally.)
+- **Key referrer list must include both domains:** `yuvreg.github.io/*` (primary)
+  and `*.netlify.app/*` (backup). Adding the github.io entry was the one-time manual
+  step done on 2026-06-08. If the map ever shows blank on a new host, it's almost
+  always a missing referrer entry.
 - For offline use, don't try to build offline maps (fiddly). Instead rely on the
   "Open in Google Maps" buttons + tell the group to pre-download Athens in the
   Google Maps app.
@@ -258,6 +281,8 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
 - [x] **Open now** badges + filter (Athens-time, computed from cached opening hours, lazy-fetched)
 - [x] **Practical pins** (supermarket, central market, pharmacy, metros, late-night food, coffee, ATM)
 - [x] **API key created, restricted (referrer + APIs), quota-capped** by the user
-- [x] **Hosted on HTTPS** → https://gazi-haftaat-hatiul.netlify.app (Netlify)
+- [x] **Hosted on HTTPS** → **https://yuvreg.github.io/athens-trip/** (GitHub Pages — primary,
+      free-forever, publish = `git push`). Old https://gazi-haftaat-hatiul.netlify.app kept as backup.
+      Verified working on the github.io link (desktop + iPhone, 0 console errors) on 2026-06-08.
 - [x] One-finger map gestures (`greedy`); verified live on desktop + iPhone via Playwright
 - [ ] Final on-the-phone check by the group during the trip (nice-to-have)
