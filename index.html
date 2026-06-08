@@ -701,7 +701,7 @@ function visible(idx){
   if(state.q){ const q=state.q.toLowerCase(); if(!(p.name+' '+p.blurb+' '+(p.area||'')).toLowerCase().includes(q)) return false; }
   if(state.filters.fav && !favs.has(idx)) return false;
   if(state.filters.vegan && !(p.cat==='restaurant' && p.vegan==='full')) return false;
-  if(state.filters.veganopt && !(p.cat==='restaurant' && p.vegan==='options')) return false;
+  if(state.filters.veganopt && !(p.cat==='restaurant' && (p.vegan==='options' || p.vegan==='full'))) return false; // "has vegan options" includes the 100%-vegan spots
   if(state.filters.sport && !(p.tags||[]).includes('sport')) return false;
   if(state.filters.beach && !(p.tags||[]).includes('beach')) return false;
   if(state.filters.view && !(p.tags||[]).includes('view')) return false;
@@ -869,8 +869,7 @@ function wireControls(){
     state.cat=b.dataset.cat; syncToggleVisibility(); applyFilters(); });
   $('#toggles').addEventListener('click', e=>{ const b=e.target.closest('.toggle'); if(!b) return;
     const f=b.dataset.f, on=b.getAttribute('aria-pressed')!=='true'; b.setAttribute('aria-pressed',on); state.filters[f]=on;
-    if(on && (f==='vegan'||f==='veganopt')){ const other=f==='vegan'?'veganopt':'vegan'; state.filters[other]=false; const ob=document.querySelector(`.toggle[data-f="${other}"]`); if(ob) ob.setAttribute('aria-pressed','false'); } // the two vegan toggles are mutually exclusive
-    applyFilters();
+    applyFilters();   // "Fully vegan" ⊂ "Vegan options": both on simply narrows to the 100%-vegan spots
     if(f==='open' && on) hydrateOpenNow(); });
   $('#closeBtn').addEventListener('click', closeDetail);
   $('#routeBack').addEventListener('click', exitRouteMode);    // leave the full-map route view
