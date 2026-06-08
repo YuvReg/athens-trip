@@ -248,7 +248,6 @@
       <div class="sub">Home base: <b>Pl. Eleftherias 22</b> · attractions, bars &amp; vegan-friendly eats nearby</div>
     </div>
     <div class="spacer"></div>
-    <button class="help" id="helpBtn">How to use</button>
   </header>
 
   <div class="main">
@@ -620,7 +619,7 @@ function addMeasurePoint(latLng){
 function measureTotalMeters(){ let m=0; for(let i=1;i<measurePts.length;i++) m+=haversine(measurePts[i-1],measurePts[i]); return m; }
 function renderMeasure(){
   const el=$('#measureTotal'); if(!el) return;
-  if(measurePts.length<2){ el.textContent = measurePts.length ? 'Tap another point...' : 'Tap the map to start measuring'; return; }
+  if(measurePts.length<2){ el.textContent = measurePts.length ? 'Tap another point...' : 'Tap the map or any pin to measure'; return; }
   const m=measureTotalMeters(); el.textContent=`📏 ${fmtDist(m)} · ${fmtWalk(m)}`;
 }
 function clearMeasure(){
@@ -668,7 +667,7 @@ async function init(){
       map, position: BASE, title:'Your apartment — Pl. Eleftherias 22 (tap to walk here)', zIndex:9999,
       icon: homeIcon(),
     });
-    homeMarker.addListener('click', ()=> showRouteToHome());
+    homeMarker.addListener('click', ()=> measureMode ? addMeasurePoint(homeMarker.getPosition()) : showRouteToHome());   // 📏 while measuring, tapping the house measures TO the apartment
 
     buildList();
     wireControls();
@@ -693,7 +692,7 @@ function homeIcon(){
 
 /* ---------- Resolve each place against Google, then add markers ---------- */
 async function resolveAll(){
-  let i=0; const pool=3; // gentler on spotty mobile/roaming networks
+  let i=0; const pool=8; // 8 at a time so the 65 lookups finish fast; still well under the daily cap
   const next = async ()=>{ const idx=i++; if(idx>=PLACES.length) return; await resolveOne(idx); await next(); };
   await Promise.all(Array.from({length:pool}, next));
 }
@@ -716,29 +715,37 @@ async function resolveOne(idx){
 
     // marker
     const m = new Marker({ map, position:{lat:loc.lat,lng:loc.lng}, title:p.name, icon:pin(CAT[p.cat].color, 8.5) });
-    m.addListener('click', ()=>openDetail(idx));
+    m.addListener('click', ()=> measureMode ? addMeasurePoint(m.getPosition()) : openDetail(idx));   // 📏 while measuring, tapping a pin drops a point ON it instead of opening it
     p._marker = m;
     applyFiltersToOne(idx);
     updateListMeta(idx);
     if(state.filters.walk) applyFilters(); // distances now known → refresh walkable list & count
 
-    // light info for the list (rating) — cached 1 day (ratings change)
-    let light = cacheGet('ath_card_'+loc.id, 1*864e5);
-    if(!light){
-      const lp = new Place({id:loc.id});
-      await lp.fetchFields({ fields:['rating','userRatingCount','priceLevel'] });
-      light = { rating:lp.rating||null, count:lp.userRatingCount||0, price:lp.priceLevel||null };
-      cacheSet('ath_card_'+loc.id, light);
-    }
-    CARD[idx]=light;
-    const ch=cacheGet('ath_hours_'+loc.id, 7*864e5); if(ch) HOURS[idx]=ch;   // free: show 🟢/🔴 for places seen on a previous visit
-    updateListRating(idx);
+    // hours cache (free, from a previous visit) — lets us show 🟢/🔴 without a call
+    const ch=cacheGet('ath_hours_'+loc.id, 7*864e5); if(ch) HOURS[idx]=ch;
+    // Rating: use the 1-day cache instantly if we have it; otherwise fetch in the BACKGROUND so the
+    // pin + list row show NOW and this worker moves straight on to the next place (no waiting on a call).
+    const light = cacheGet('ath_card_'+loc.id, 1*864e5);
+    if(light){ CARD[idx]=light; updateListRating(idx); }
+    else { hydrateCard(idx, loc.id); }   // fire-and-forget; the ⭐ fills in a moment later
   }catch(e){ console.warn('resolve failed', p.query, e); p._failed=true; updateListMeta(idx); }
+}
+
+// Background rating fetch — fills in the ⭐ AFTER the pin is already on the map, so load feels instant.
+// Cached 1 day only (Google's terms: don't store ratings long-term).
+async function hydrateCard(idx, id){
+  try{
+    const lp = new Place({id});
+    await lp.fetchFields({ fields:['rating','userRatingCount','priceLevel'] });
+    const light = { rating:lp.rating||null, count:lp.userRatingCount||0, price:lp.priceLevel||null };
+    cacheSet('ath_card_'+id, light); CARD[idx]=light; updateListRating(idx);
+  }catch(e){ /* leave the "rating…" placeholder; tapping the card still loads full details */ }
 }
 
 /* ---------- Build & render the sidebar list ---------- */
 function buildList(){
   const list=$('#list'); list.innerHTML='';
+  const frag=document.createDocumentFragment();   // build all 65 cards off-screen, attach once (1 reflow, not 65)
   PLACES.forEach((p,idx)=>{
     const c=document.createElement('div'); c.className='card'; c.dataset.idx=idx;
     c.innerHTML = `
@@ -746,11 +753,12 @@ function buildList(){
       <div class="ttl"><span class="cdot" style="background:${CAT[p.cat].color}"></span><h3>${p.name}</h3></div>
       <div class="meta" data-meta></div>
       <div class="blurb">${p.blurb}</div>`;
-    c.addEventListener('click', ()=> KEY_OK ? openDetail(idx) : toast('Add your Google key first (see “How to use”).'));
+    c.addEventListener('click', ()=> KEY_OK ? openDetail(idx) : toast('Add your Google key first — see the SETUP.md guide.'));
     c.querySelector('.fav').addEventListener('click', e=>{ e.stopPropagation(); toggleFav(idx); });
-    list.appendChild(c); els[idx]=c;
+    frag.appendChild(c); els[idx]=c;
     updateListMeta(idx);
   });
+  list.appendChild(frag);   // one attach for all 65 cards
   applyFilters();
 }
 
@@ -830,6 +838,7 @@ async function hydrateOpenNow(){
 
 /* ---------- Detail panel ---------- */
 async function openDetail(idx){
+  if(measureMode) return;            // 📏 ruler is on — taps only measure, don't open cards
   const p=PLACES[idx], loc=RES[idx];
   if(!loc){ openFallback(idx); return; }
   setActive(idx);
@@ -948,7 +957,8 @@ function openFallback(idx){
 
 /* ---------- Controls wiring ---------- */
 function wireControls(){
-  $('#search').addEventListener('input', e=>{ state.q=e.target.value.trim(); applyFilters(); });
+  let searchTimer=null;   // wait ~¼s after the last keystroke before re-filtering all 65 (snappier typing)
+  $('#search').addEventListener('input', e=>{ state.q=e.target.value.trim(); clearTimeout(searchTimer); searchTimer=setTimeout(applyFilters, 250); });
   $('#chips').addEventListener('click', e=>{ const b=e.target.closest('.chip'); if(!b) return;
     document.querySelectorAll('#chips .chip').forEach(c=>c.setAttribute('aria-pressed', c===b));
     state.cat=b.dataset.cat; syncToggleVisibility(); applyFilters(); });
@@ -964,7 +974,6 @@ function wireControls(){
   $('#homeBtn').addEventListener('click', showRouteToHome);          // 🏠 walk me home from here
   $('#measureBtn').addEventListener('click', toggleMeasure);         // 📏 ruler
   $('#measureClear').addEventListener('click', clearMeasure);
-  $('#helpBtn').addEventListener('click', showHelp);
   $('#sharePicks').addEventListener('click', sharePicks);
   map.addListener('click', (e)=>{ if(measureMode){ addMeasurePoint(e.latLng); return; } if(routeMode) return; closeDetail(); });   // measure > route > dismiss the card
   map.addListener('dragstart', ()=>{ if(following){ following=false; $('#locateBtn').classList.remove('on'); } }); // stop GPS snap-back while you look around
@@ -1016,7 +1025,7 @@ function onGeoErr(err){ stopLocate();
     if(routeMode){ routeOrigin='base'; syncOriginToggle(); drawRoute(); toast('Couldn’t get your location — showing the route from your apartment.'); return; }
   }
   if(err.code===1) toast('Location blocked. Allow location for this site to see your dot.');
-  else if(location.protocol==='file:') toast('Live location needs the site hosted on https:// (see “How to use”).');
+  else if(location.protocol==='file:') toast('Live location needs the hosted https:// link, not the local file.');
   else toast('Couldn’t get your location — try again outdoors.');
 }
 
@@ -1033,22 +1042,6 @@ function showErrorOverlay(err){
     <p>Google rejected the request. Usually that means the key isn’t finished setting up. Check that in your Google Cloud account you have:</p>
     <ol><li><b>Maps JavaScript API</b> turned on</li><li><b>Places API (New)</b> turned on</li><li>Billing enabled (free tier; we cap it)</li><li>The key’s website restriction allows this address</li></ol>
     <p style="font-size:12px;color:#90a4b3">Technical detail: ${(err&&err.message)||err}</p>
-    <p><button class="help" style="background:var(--sea);border:none" onclick="document.getElementById('overlay').classList.remove('show')">Close</button></p>`;
-  $('#overlay').classList.add('show');
-}
-function showHelp(){
-  $('#overlayBox').innerHTML=`<h2>How to use this map</h2>
-    <ol>
-      <li><b>Tap any place</b> (list or pin) for its Google rating, reviews, photos, hours and Directions.</li>
-      <li><b>“Show walking route here”</b> opens a full-screen map of the path. Switch between <b>🏠 from the apartment</b> and <b>📍 from where you are right now</b>, then tap <b>← Back</b> to return.</li>
-      <li><b>Save favorites</b> with the ☆ star on each place, filter to <b>⭐ Favorites</b>, then tap <b>“Share my picks”</b> to send your shortlist to the group chat.</li>
-      <li><b>Filter</b> with the chips (Attractions / Eat / Bars / 🛒 Essentials). The toggles below change to fit what you’re viewing: <b>🟢 Open now</b> always, <b>🌱 Fully vegan</b> & <b>🥗 Vegan options</b> under Eat, <b>⚽ Football</b> under Bars, plus <b>🏖️ Beach</b>, <b>🌅 View</b> and <b>🚶 Walkable</b>.</li>
-      <li><b>The ◎ button</b> shows your live location. Drag the map to look around; tap ◎ again to re-center on yourself.</li>
-      <li><b>The 🏠 button</b> (just above ◎) draws a walking route to the apartment from wherever you are — or tap the house on the map for the same thing.</li>
-      <li><b>The 📏 ruler</b> (top button) lets you tap two or more spots to measure the walking distance between them; tap <b>Clear</b> or the ruler again to stop.</li>
-    </ol>
-    <p>🏠 The house marker is your apartment — distances and walk times are measured from there.</p>
-    <p>📴 <b>Heading somewhere with weak signal?</b> Open the Google Maps app first and “Download offline map” for Athens. This site hands directions off to it, so navigation keeps working even if your data drops.</p>
     <p><button class="help" style="background:var(--sea);border:none" onclick="document.getElementById('overlay').classList.remove('show')">Close</button></p>`;
   $('#overlay').classList.add('show');
 }
