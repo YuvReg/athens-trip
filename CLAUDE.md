@@ -74,7 +74,7 @@ stale — Google is the chosen path.
 
 | Piece | What it means | Status |
 |---|---|---|
-| **Content** | Curated attractions, bars, vegan-friendly restaurants, beach/Riviera spots, football bars & practical pins | ✅ Done — 63 places (21 attractions incl. 4 beach, 18 bars incl. 3 football, 14 restaurants, 10 essentials). Count dropped 65→63 after a closure/rebrand sweep (removed Crudo + Beer Academy; renamed/repointed Mariloulou, Mama Tierra, Taf Coffee). |
+| **Content** | Curated attractions, bars, vegan-friendly restaurants, beach/Riviera spots, football bars & practical pins | ✅ Done — 65 places (21 attractions incl. 4 beach, 18 bars incl. 3 football, 14 restaurants, 12 essentials split into 🛒 3 shops / 🚆 4 transit / 🏧 2 money / 🍴 3 quick-bites). Count went 65→63 in a closure sweep (removed Crudo + Beer Academy; renamed/repointed Mariloulou, Mama Tierra, Taf Coffee), then +2 back to 65 (added Airport Bus X95 + ONExchange when Essentials was split into 4 categories). |
 | **The map + pins** | Google Map with a colored pin per place, grouped by category | ✅ Built (classic `google.maps.Marker`) |
 | **Pin info cards** | Tap a pin → card with Google rating, reviews, photos, hours, directions | ✅ Built |
 | **Live location** | Map shows the user's live position and can follow them | ✅ Built (works on the hosted https link) |
@@ -142,7 +142,7 @@ etc. are **resolved live at runtime** by `Place.searchByText(query)` and then
 
 ### Map behavior (as built)
 - Centered on the home base (§2) at a walking-distance zoom.
-- Pins **color-coded by category** (attractions / restaurants / bars / 🛒 essentials).
+- Pins **color-coded by category** (attractions / restaurants / bars / 🛒 shops / 🚆 transit / 🏧 money / 🍴 quick-bites — the old single "essentials" group is now these four distinct categories, each its own colour).
 - A **🏠 house-shaped home marker** for the apartment (an inline-SVG icon, not a
   plain dot); tap it to draw a walking route home from your live location.
   Distances/walk-times are measured from there.
@@ -157,7 +157,7 @@ etc. are **resolved live at runtime** by `Place.searchByText(query)` and then
   your live location — origin is always "you", so the from/to switch is hidden),
   and **📏 ruler** (tap 2+ points to measure walking distance; reuses `haversine`).
 - **Filters (smart / context-sensitive):** category chips Attractions / Eat /
-  Bars / 🛒 Essentials; always-on toggles ⭐ favorites, 🟢 open now, 🚶 walkable;
+  Bars / 🛒 Shops / 🚆 Transit / 🏧 Money / 🍴 Quick bites; always-on toggles ⭐ favorites, 🟢 open now, 🚶 walkable;
   plus context toggles that appear only for their category — 🌱 fully vegan &
   🥗 vegan options (under Eat), ⚽ football (under Bars), 🏖️ beach, 🌅 great view.
   "Open now" is computed in Athens time from cached opening hours (lazy-fetched).
@@ -280,7 +280,7 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
 > Update this section as work progresses so anyone opening the project knows
 > where things stand.
 
-- [x] Curated places — 63 total (21 attractions incl. 4 beach, 18 bars incl. 3 football, 14 restaurants, 10 essentials)
+- [x] Curated places — 65 total (21 attractions incl. 4 beach, 18 bars incl. 3 football, 14 restaurants, 12 essentials → 🛒 3 shops / 🚆 4 transit / 🏧 2 money / 🍴 3 quick-bites)
 - [x] **Data accuracy sweep (closures/rebrands)** via `_pwtest/audit.mjs` (compares each place's live Google name + `businessStatus` to ours): renamed Los Vegans→**Mariloulou**, repointed **Mama Tierra**→Acropolis branch, **Dope Roasting**→**Taf Coffee**, removed **Crudo** (now a fish taverna) + **Beer Academy** (→"beertime", unverified for football); kept **six d.o.g.s** (Google "closed" flag is stale). Re-run `audit.mjs` before a trip to re-check. Temp-closed to watch: Kerameikos, Avocado, A for Athens, Holy Spirit.
 - [x] Place lookup wired (live via `Place.searchByText` + `localStorage` cache — no stored IDs)
 - [x] `index.html` map with Google Maps + color-coded pins + 🏠 home base
@@ -303,12 +303,12 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
       inline-SVG marker; tap it OR the new 🏠 button (stacked above ◎ locate, bottom-right)
       to route home from your live location; 📏 ruler button measures distance between
       tapped points (`haversine`). Verified live on desktop + iPhone (0 console errors), 2026-06-08.
-- [x] **Smart filters** — chips Attractions / Eat / Bars / 🛒 Essentials + context toggles
+- [x] **Smart filters** — chips Attractions / Eat / Bars / 🛒 Shops / 🚆 Transit / 🏧 Money / 🍴 Quick bites + context toggles
       (⭐ favorites, 🟢 open now, 🌱 fully vegan, 🥗 vegan options, ⚽ football, 🏖️ beach, 🌅 view, 🚶 walkable)
 - [x] **Beach / Riviera** spots (Glyfada / Vouliagmeni / Alimos) — far places show tram/taxi + Google-Maps transit hand-off
 - [x] **Football bars** for the World Cup (Athens Sports Bar, James Joyce, Lucky Sparrow — web-verified; Beer Academy dropped in the accuracy sweep)
 - [x] **Open now** badges + filter (Athens-time, computed from cached opening hours, lazy-fetched)
-- [x] **Practical pins** (supermarket, central market, pharmacy, metros, late-night food, coffee, ATM)
+- [x] **Essentials split into 4 categories** (2026-06-08) — 🛒 Shops (supermarket, central market, pharmacy), 🚆 Transit (3 metros + the NEW 24/7 Airport Bus X95 at Syntagma), 🏧 Money (National Bank ATM + NEW ONExchange currency exchange for USD→EUR cash), 🍴 Quick bites (late-night souvlaki/gyros + Taf Coffee). Each its own top-level chip + map-pin colour; +2 web-verified pins. Verified live desktop + iPhone (0 console errors).
 - [x] **API key created, restricted (referrer + APIs), quota-capped** by the user
 - [x] **Hosted on HTTPS** → **https://yuvreg.github.io/athens-trip/** (GitHub Pages — primary,
       free-forever, publish = `git push`). Old https://gazi-haftaat-hatiul.netlify.app kept as backup.
