@@ -25,7 +25,7 @@
     --sea:#0e5a8a; --sea-2:#1e88c7;
     --ink:#15293a; --muted:#5c7488; --line:#e4ecf2;
     --bg:#f4f9fc; --card:#ffffff;
-    --attraction:#2d7dd2; --restaurant:#2e9e5b; --bar:#8e44ad; --home:#e8772e;
+    --attraction:#2d7dd2; --restaurant:#2e9e5b; --bar:#8e44ad; --home:#e8772e; --practical:#6b7a8d;
     --gold:#f2b01e; --shadow:0 6px 24px rgba(16,46,72,.12);
     --r:16px;
   }
@@ -77,6 +77,7 @@
   .chip[data-cat="attraction"][aria-pressed="true"]{background:var(--attraction)}
   .chip[data-cat="restaurant"][aria-pressed="true"]{background:var(--restaurant)}
   .chip[data-cat="bar"][aria-pressed="true"]{background:var(--bar)}
+  .chip[data-cat="practical"][aria-pressed="true"]{background:var(--practical)}
   .toggles{display:flex; gap:8px; margin-top:9px; flex-wrap:wrap}
   .toggle{
     font-size:12.5px; font-weight:600; color:var(--muted); border:1px dashed var(--line); background:#fff;
@@ -111,6 +112,9 @@
   .card .fav:hover{transform:scale(1.18)}
   .card .fav.on{color:var(--gold)}
   .badge.gold{background:#fff3df; color:#a76a12}
+  .badge.sport{background:#eaf3ff; color:#2d6fd2}
+  .badge.open{background:#e7f6ec; color:#1f7a44}
+  .badge.closed{background:#fdecec; color:#b23a3a}
   .sharepicks{margin:10px 16px 0; width:calc(100% - 32px); padding:9px; border:1px solid var(--sea-2); background:#eef7fd; color:var(--sea); border-radius:10px; font-size:13px; font-weight:700; cursor:pointer}
   .sharepicks:hover{background:#e0f0fb}
   .routebox{margin-top:14px; border-top:1px solid var(--line); padding-top:12px}
@@ -249,11 +253,16 @@
           <button class="chip" data-cat="attraction" aria-pressed="false"><span class="dot" style="background:var(--attraction)"></span>Attractions</button>
           <button class="chip" data-cat="restaurant" aria-pressed="false"><span class="dot" style="background:var(--restaurant)"></span>Eat</button>
           <button class="chip" data-cat="bar" aria-pressed="false"><span class="dot" style="background:var(--bar)"></span>Bars</button>
+          <button class="chip" data-cat="practical" aria-pressed="false"><span class="dot" style="background:var(--practical)"></span>🛒 Essentials</button>
         </div>
         <div class="toggles" id="toggles">
           <button class="toggle" data-f="fav" aria-pressed="false">⭐ Favorites</button>
-          <button class="toggle" data-f="vegan" aria-pressed="false">🌱 Fully vegan</button>
-          <button class="toggle" data-f="view" aria-pressed="false">🌅 Great view</button>
+          <button class="toggle" data-f="open" aria-pressed="false">🟢 Open now</button>
+          <button class="toggle" data-f="vegan" data-show="restaurant" aria-pressed="false">🌱 Fully vegan</button>
+          <button class="toggle" data-f="veganopt" data-show="restaurant" aria-pressed="false">🥗 Vegan options</button>
+          <button class="toggle" data-f="sport" data-show="bar" aria-pressed="false">⚽ Football</button>
+          <button class="toggle" data-f="beach" data-show="all,attraction,restaurant,bar" aria-pressed="false">🏖️ Beach</button>
+          <button class="toggle" data-f="view" data-show="all,attraction" aria-pressed="false">🌅 Great view</button>
           <button class="toggle" data-f="walk" aria-pressed="false">🚶 Walkable</button>
         </div>
         <button class="sharepicks" id="sharePicks" hidden>📤 Share my picks with the group</button>
@@ -272,6 +281,7 @@
         <div><span class="d" style="background:var(--attraction)"></span> Attractions</div>
         <div><span class="d" style="background:var(--restaurant)"></span> Restaurants</div>
         <div><span class="d" style="background:var(--bar)"></span> Bars</div>
+        <div><span class="d" style="background:var(--practical)"></span> Essentials</div>
       </div>
 
       <div class="detail" id="detail">
@@ -304,6 +314,13 @@
    THE PLACES  — curated for Pl. Eleftherias 22, Athens
    Each item is resolved live against Google so ratings/photos/reviews
    are always current. "query" is what we ask Google to find.
+
+   Editing cheat-sheet (safe for non-coders):
+   • cat   : 'attraction' | 'restaurant' | 'bar' | 'practical'
+   • tags  : optional list — 'must','view','sunset','ride','beach','sport'
+             ('ride'/'beach' = it's a trip out, shown as tram/taxi not a walk)
+   • vegan : restaurants only — 'full' (100% vegan) | 'options' (good vegan picks)
+   • price : optional — '€' | '€€' | '€€€'
    ===================================================================== */
 const BASE = { lat: 37.98186, lng: 23.72361 }; // Plateia Eleftherias / Koumoundourou Sq
 
@@ -355,12 +372,42 @@ const PLACES = [
   {cat:'bar', name:'Couleur Locale', query:'Couleur Locale, Normanou 3, Monastiraki, Athens', area:'Monastiraki', tags:['view'], blurb:'Hidden boho rooftop with a stunning Parthenon view and a less touristy crowd.'},
   {cat:'bar', name:'Brettos', query:'Brettos Bar, Kidathineon 41, Plaka, Athens', area:'Plaka', blurb:'Athens’ oldest distillery (est. 1909) — a glowing wall of colored bottles, ouzo, brandy and 35+ liqueurs.'},
   {cat:'bar', name:'Heteroclito', query:'Heteroclito Wine Bar, Fokionos 2, Athens', area:'Center', blurb:'Cozy Parisian-style cave à vin — 200+ Greek labels with a natural-wine focus and great staff.'},
+
+  // ---- SPORTS BARS (verified to show live football — great for the World Cup ⚽) ----
+  {cat:'bar', name:'Athens Sports Bar', query:'Athens Sports Bar, Athens', area:'Makrygianni', tags:['sport'], blurb:'Athens’ dedicated sports bar — 8 big HD screens showing all the football incl. the World Cup, craft beer + bar food. ~15 min walk.'},
+  {cat:'bar', name:'James Joyce Irish Pub', query:'The James Joyce Irish Pub, Athens', area:'Monastiraki', tags:['sport'], blurb:'Lively Monastiraki Irish pub — 3 screens locked on the match, Guinness on tap, proper pub grub. Fills up on big games.'},
+  {cat:'bar', name:'The Lucky Sparrow', query:'The Lucky Sparrow Pub, Kerameikos, Athens', area:'Kerameikos', tags:['sport'], blurb:'Craft-beer & rock pub by Kerameikos metro (4.8★) that beams the big matches — late hours suit the World Cup’s evening kickoffs.'},
+  {cat:'bar', name:'Beer Academy', query:'Beer Academy, Psyrri, Athens', area:'Psyrri', tags:['sport'], blurb:'Your closest pick (~6 min) — 100+ craft beers in Psyrri, puts the big matches up on screen. Great pre-game spot.'},
+
+  // ---- BEACH / ATHENS RIVIERA (a tram or taxi ride south — 🏖️) ----
+  {cat:'attraction', name:'Lake Vouliagmeni', query:'Lake Vouliagmeni, Vouliagmeni', area:'Vouliagmeni', tags:['beach','ride','view'], blurb:'Surreal warm mineral lake (22–29°C all year) ringed by cliffs — swim + a free little “fish spa”. ~30 min by taxi/tram.'},
+  {cat:'attraction', name:'Vouliagmeni Beach', query:'Vouliagmeni Beach, Akti Vouliagmenis', area:'Vouliagmeni', tags:['beach','ride'], blurb:'Blue-Flag organized beach — calm, clean, sheltered water and sunbeds. The Riviera’s most relaxing swim (small entry fee).'},
+  {cat:'attraction', name:'Astir Beach', query:'Astir Beach, Vouliagmeni', area:'Vouliagmeni', tags:['beach','ride'], blurb:'The glam one — 400 m of fine sand, upscale facilities, watersports. Pricier entry, worth one splurge beach day.'},
+  {cat:'attraction', name:'Glyfada Beach (Asteras)', query:'Asteras Beach, Glyfada', area:'Glyfada', tags:['beach','ride'], blurb:'Lively, sandy, younger-crowd beach with bars and food steps away — the easy, fun Riviera default. Tram from the centre.'},
+  {cat:'restaurant', name:'Crudo', query:'Crudo, Glyfada', area:'Glyfada', vegan:'full', price:'€€', tags:['beach','ride'], blurb:'Bright, fully-vegan spot in Glyfada — courgette & avocado tartare, jackfruit burgers, poke bowls. Perfect post-beach lunch.'},
+  {cat:'restaurant', name:'Yi (raw vegan)', query:'Yi raw vegan, Glyfada', area:'Glyfada', vegan:'full', price:'€€', tags:['beach','ride'], blurb:'Chic raw-vegan café — Greek salad with cashew “feta”, chia bowls, carrot cake. Light, healthy seaside brunch.'},
+  {cat:'bar', name:'Holy Spirit Cocktail Bar', query:'Holy Spirit Cocktail Bar, Glyfada', area:'Glyfada', tags:['beach','ride'], blurb:'Award-winning Glyfada cocktail bar — playful, well-priced drinks and a fun young crowd. A great Riviera night out.'},
+  {cat:'bar', name:'Bolivar Beach Bar', query:'Bolivar Beach Bar, Alimos', area:'Alimos', tags:['beach','ride','view'], blurb:'Iconic palm-fringed beach club — DJ sunsets that roll into a dance floor. Closest Riviera beach bar to the centre.'},
+  {cat:'restaurant', name:'Krabo', query:'Krabo, Vouliagmeni', area:'Vouliagmeni', price:'€€€', tags:['beach','ride','view'], blurb:'Secluded wood-and-wicker beach restaurant on the sand with Astir views — sunset dinner that becomes a cool beach club.'},
+
+  // ---- ESSENTIALS / PRACTICAL (everyday stuff near the apartment — 🛒) ----
+  {cat:'practical', name:'Sklavenitis Supermarket', query:'Sklavenitis Supermarket, Athinas, Athens', area:'Omonia', blurb:'Big mainstream supermarket for a proper shop — ~7 min toward Omonia.'},
+  {cat:'practical', name:'Varvakios Central Market', query:'Varvakios Agora, Athens', area:'Omonia', blurb:'Athens’ historic food market — fresh produce, fish, cheese, olives. A sight in itself, ~6 min.'},
+  {cat:'practical', name:'Pharmacy (nearest)', query:'Pharmacy, Plateia Eleftherias, Athens', area:'Koumoundourou Sq', blurb:'Closest pharmacy. At night, pharmacies rotate duty — dial 11888 or check vrisko.gr for the one open now.'},
+  {cat:'practical', name:'Metaxourgeio Metro (Line 2)', query:'Metaxourgeio Metro Station', area:'Metaxourgeio', blurb:'Your closest metro (~7 min) — Red Line 2 across the city.'},
+  {cat:'practical', name:'Monastiraki Metro (Lines 1 & 3)', query:'Monastiraki Metro Station', area:'Monastiraki', blurb:'~9 min — Blue Line 3 runs direct to the airport; Green Line 1 to Piraeus port.'},
+  {cat:'practical', name:'Omonia Metro (Lines 1 & 2)', query:'Omonia Metro Station', area:'Omonia', blurb:'Central hub ~7 min — Green Line 1 + Red Line 2 interchange.'},
+  {cat:'practical', name:'O Thanasis (late souvlaki)', query:'O Thanasis, Mitropoleos 69, Athens', area:'Monastiraki', blurb:'Classic kebab/souvlaki open till ~2am — reliable late-night feed, ~9 min.'},
+  {cat:'practical', name:'Elvis (late-night gyros)', query:'Elvis souvlaki, Psyrri, Athens', area:'Psyrri', blurb:'Tiny local souvlaki joint open very late — perfect post-bar, just a few min away.'},
+  {cat:'practical', name:'Dope Roasting Co. (coffee)', query:'Dope Roasting Co, Psyrri, Athens', area:'Psyrri', blurb:'Specialty espresso & pastries for mornings — modern, friendly, ~3 min.'},
+  {cat:'practical', name:'ATM — National Bank', query:'National Bank of Greece, Omonia, Athens', area:'Omonia', blurb:'Bank ATM in the centre — lower fees than the random street “Euronet” machines.'},
 ];
 
 const CAT = {
   attraction:{label:'Attraction', color:'#2d7dd2'},
   restaurant:{label:'Restaurant', color:'#2e9e5b'},
   bar:{label:'Bar', color:'#8e44ad'},
+  practical:{label:'Essentials', color:'#6b7a8d'},
 };
 
 /* ---------- Load Google Maps (only if a real key is present) ---------- */
@@ -376,9 +423,10 @@ if (KEY_OK) {
 let map, Place, Marker, Circle, infoBase, userMarker, accCircle, following=false, watchId=null, detailToken=0;
 let favs = new Set(), shareData = null, dirService = null, dirRenderer = null;
 let routeMode=false, routeIdx=null, routeOrigin='base', pendingLoc=null, firstFix=true;
-const state = { cat:'all', q:'', filters:{fav:false, vegan:false, view:false, walk:false}, active:null };
+const state = { cat:'all', q:'', filters:{fav:false, open:false, vegan:false, veganopt:false, sport:false, beach:false, view:false, walk:false}, active:null };
 const RES = {}; // index -> {id, lat, lng}  (resolved location)
 const CARD = {}; // index -> {rating, count, price}  (light info for list)
+const HOURS = {}; // index -> {periods, utc}  (opening hours, for the “open now” badge + filter)
 const els = {}; // index -> list DOM node
 
 const $ = s => document.querySelector(s);
@@ -387,6 +435,11 @@ const haversine = (a,b)=>{const R=6371000,t=x=>x*Math.PI/180,dLa=t(b.lat-a.lat),
   s=Math.sin(dLa/2)**2+Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(s));};
 const fmtDist = m => m<950 ? `${Math.round(m/10)*10} m` : `${(m/1000).toFixed(1)} km`;
 const fmtWalk = m => `${Math.max(1,Math.round((m*1.3)/83))} min walk`; // ×1.3 for Athens' dense, hilly streets
+// "Far" spots (beaches + ride-out sights) get tram/taxi wording instead of a silly "240 min walk", and hand routing to Google Maps.
+const isFar = idx => { const p=PLACES[idx]; return (p.tags||[]).includes('beach') || (p.tags||[]).includes('ride') || (p._dist!=null && p._dist>3000); };
+const detailDistLine = idx => { const p=PLACES[idx]; if(p._dist==null) return ''; return isFar(idx)
+  ? `<div class="hours">🚊 ${fmtDist(p._dist)} from your apartment · by tram/taxi</div>`
+  : `<div class="hours">🚶 ${fmtDist(p._dist)} from your apartment · ${fmtWalk(p._dist)}</div>`; };
 const stars = r => { const f=Math.round(r); return '★★★★★'.slice(0,f)+'☆☆☆☆☆'.slice(0,5-f); };
 const priceEuro = p => { if(p==null) return ''; const map={PRICE_LEVEL_FREE:0,PRICE_LEVEL_INEXPENSIVE:1,PRICE_LEVEL_MODERATE:2,PRICE_LEVEL_EXPENSIVE:3,PRICE_LEVEL_VERY_EXPENSIVE:4}; let n=typeof p==='number'?p:map[p]; return n? '€'.repeat(n):''; };
 
@@ -416,7 +469,30 @@ async function sharePlace(){
   if(navigator.share){ try{ await navigator.share({title:shareData.title, text:shareData.title, url:shareData.url}); return; }catch(e){} }
   try{ await navigator.clipboard.writeText(shareData.url); toast('Link copied!'); }catch(e){ toast(shareData.url); }
 }
-const isGoldenHour = () => { const h=new Date().getHours(); return h>=16 && h<21; }; // late-afternoon → sunset window
+// Athens wall-clock — so golden-hour & open-now are correct even if the page is opened from another country.
+function athensNow(){
+  const f=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Athens',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false});
+  const o={}; f.formatToParts(new Date()).forEach(p=>o[p.type]=p.value);
+  const days={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
+  const day = days[o.weekday] ?? new Date().getDay();
+  let hh=parseInt(o.hour,10); if(hh===24) hh=0;            // some engines render midnight as "24"
+  return { day, min: hh*60+parseInt(o.minute,10) };
+}
+const isGoldenHour = () => { const h=Math.floor(athensNow().min/60); return h>=16 && h<21; }; // late-afternoon → sunset (Athens time)
+// Open right now? Computed from cached opening-hours periods + Athens time, so the boolean is never stale.
+function isOpenNow(periods){
+  if(!periods || !periods.length) return null;
+  const now=athensNow(), nowAbs=now.day*1440+now.min;
+  for(const per of periods){
+    if(per.open && !per.close) return true;                // 24-hour place
+    if(!per.open || !per.close) continue;
+    const o=per.open.day*1440+(per.open.hour||0)*60+(per.open.minute||0);
+    let c=per.close.day*1440+(per.close.hour||0)*60+(per.close.minute||0);
+    if(c<=o) c+=10080;                                      // closes after midnight / wraps past Sunday
+    if((nowAbs>=o && nowAbs<c) || (nowAbs+10080>=o && nowAbs+10080<c)) return true;
+  }
+  return false;
+}
 
 /* ---------- In-site walking route (Directions API) — full-map “route mode” ----------
    Tapping “Show walking route here” hides the place card, blows the map up to full
@@ -570,6 +646,7 @@ async function resolveOne(idx){
       cacheSet('ath_card_'+loc.id, light);
     }
     CARD[idx]=light;
+    const ch=cacheGet('ath_hours_'+loc.id, 7*864e5); if(ch) HOURS[idx]=ch;   // free: show 🟢/🔴 for places seen on a previous visit
     updateListRating(idx);
   }catch(e){ console.warn('resolve failed', p.query, e); p._failed=true; updateListMeta(idx); }
 }
@@ -595,18 +672,22 @@ function buildList(){
 function metaHtml(idx){
   const p=PLACES[idx]; const bits=[];
   if(p.cat==='restaurant') bits.push(p.vegan==='full' ? `<span class="badge veg">🌱 100% vegan</span>` : `<span class="badge opt">vegan options</span>`);
+  if((p.tags||[]).includes('sport')) bits.push(`<span class="badge sport">📺 football</span>`);
   if((p.tags||[]).includes('view')) bits.push(`<span class="badge view">🌅 view</span>`);
   if((p.tags||[]).includes('view') && isGoldenHour()) bits.push(`<span class="badge gold">🌅 golden hour now</span>`);
-  if((p.tags||[]).includes('ride')) bits.push(`<span class="badge ride">short ride</span>`);
+  if((p.tags||[]).includes('ride') && !(p.tags||[]).includes('beach')) bits.push(`<span class="badge ride">short ride</span>`);
   if(p.price) bits.push(`<span class="badge price">${p.price}</span>`);
+  // open / closed — only once we know this place's hours (lazy, see HOURS)
+  const h=HOURS[idx];
+  if(h){ const o=isOpenNow(h.periods); if(o===true) bits.push(`<span class="badge open">🟢 Open</span>`); else if(o===false) bits.push(`<span class="badge closed">🔴 Closed</span>`); }
   // rating
   const cd=CARD[idx];
   if(cd && cd.rating) bits.push(`<span class="rate"><span class="stars">${stars(cd.rating)}</span> ${cd.rating.toFixed(1)} <span class="cnt">(${cd.count})</span></span>`);
   else if(p._failed) bits.push(`<span class="rate loading">⚠ tap for Google ↗</span>`);
   else if(KEY_OK) bits.push(`<span class="rate loading" data-rate>rating…</span>`);
-  // area + distance
+  // area + distance (far spots show tram/taxi instead of a walk)
   let geo = p.area || '';
-  if(p._dist!=null) geo += ` · ${fmtDist(p._dist)}`;
+  if(p._dist!=null) geo += isFar(idx) ? ` · ${fmtDist(p._dist)} · tram/taxi` : ` · ${fmtDist(p._dist)}`;
   if(geo) bits.push(`<span>${geo}</span>`);
   return bits.join('');
 }
@@ -620,8 +701,12 @@ function visible(idx){
   if(state.q){ const q=state.q.toLowerCase(); if(!(p.name+' '+p.blurb+' '+(p.area||'')).toLowerCase().includes(q)) return false; }
   if(state.filters.fav && !favs.has(idx)) return false;
   if(state.filters.vegan && !(p.cat==='restaurant' && p.vegan==='full')) return false;
+  if(state.filters.veganopt && !(p.cat==='restaurant' && p.vegan==='options')) return false;
+  if(state.filters.sport && !(p.tags||[]).includes('sport')) return false;
+  if(state.filters.beach && !(p.tags||[]).includes('beach')) return false;
   if(state.filters.view && !(p.tags||[]).includes('view')) return false;
   if(state.filters.walk){ if((p.tags||[]).includes('ride')) return false; if(p._dist!=null && p._dist>1700) return false; }
+  if(state.filters.open){ const h=HOURS[idx]; if(h==null || isOpenNow(h.periods)!==true) return false; }
   return true;
 }
 function applyFiltersToOne(idx){ const p=PLACES[idx]; if(p._marker) p._marker.setVisible(visible(idx)); }
@@ -629,6 +714,33 @@ function applyFilters(){
   let n=0;
   PLACES.forEach((p,idx)=>{ const v=visible(idx); if(els[idx]) els[idx].style.display=v?'':'none'; if(p._marker) p._marker.setVisible(v); if(v)n++; });
   $('#countline').textContent = `${n} place${n!==1?'s':''} shown`;
+}
+// Smart filter bar: only show the toggles relevant to the current category — and clear any that get hidden.
+function syncToggleVisibility(){
+  document.querySelectorAll('#toggles .toggle').forEach(b=>{
+    const show=b.dataset.show, ok = !show || show.split(',').includes(state.cat);
+    b.style.display = ok ? '' : 'none';
+    if(!ok && b.getAttribute('aria-pressed')==='true'){ b.setAttribute('aria-pressed','false'); state.filters[b.dataset.f]=false; }
+  });
+}
+// "passes everything except the open filter" — so we only fetch hours for places currently in view
+function passesExceptOpen(idx){ const o=state.filters.open; state.filters.open=false; const v=visible(idx); state.filters.open=o; return v; }
+// Lazy open-now: fetch hours for the visible places that lack them, cache 7 days, then re-filter. Runs only when Open-now is switched ON.
+let hydrating=false;
+async function hydrateOpenNow(){
+  if(hydrating || !KEY_OK || !Place) return;
+  const need=[]; PLACES.forEach((p,idx)=>{ if(RES[idx] && !HOURS[idx] && passesExceptOpen(idx)) need.push(idx); });
+  if(!need.length){ applyFilters(); return; }
+  hydrating=true;
+  let i=0; const pool=3;
+  const next=async()=>{ const k=i++; if(k>=need.length) return; const idx=need[k];
+    try{ const lp=new Place({id:RES[idx].id}); await lp.fetchFields({fields:['regularOpeningHours','utcOffsetMinutes']});
+      if(lp.regularOpeningHours && lp.regularOpeningHours.periods){ HOURS[idx]={periods:lp.regularOpeningHours.periods, utc:lp.utcOffsetMinutes}; cacheSet('ath_hours_'+RES[idx].id, HOURS[idx]); updateListMeta(idx); }
+    }catch(e){}
+    await next(); };
+  await Promise.all(Array.from({length:pool}, next));
+  hydrating=false;
+  if(state.filters.open) applyFilters();   // re-filter now that hours are known
 }
 
 /* ---------- Detail panel ---------- */
@@ -657,6 +769,8 @@ async function openDetail(idx){
 
     // open now
     let openNow; try{ openNow = await place.isOpen(); }catch(e){}
+    // cache opening hours so the list can show 🟢/🔴 + power the Open-now filter (free — we already fetched them here)
+    if(place.regularOpeningHours && place.regularOpeningHours.periods){ HOURS[idx]={periods:place.regularOpeningHours.periods, utc:place.utcOffsetMinutes}; cacheSet('ath_hours_'+loc.id, HOURS[idx]); updateListMeta(idx); }
     let todayLine='';
     const wd = place.regularOpeningHours && place.regularOpeningHours.weekdayDescriptions;
     if(wd && wd.length){ const gi=(new Date().getDay()+6)%7; todayLine = esc(wd[gi]||''); }
@@ -664,8 +778,9 @@ async function openDetail(idx){
     const cd = CAT[p.cat];
     const rUri = place.googleMapsURI || `https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}&query_place_id=${loc.id}`;
     shareData = { title: (place.displayName||p.name)+' · our Athens trip', url: rUri };
-    const dir = `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}&destination_place_id=${loc.id}&travelmode=walking`;
-    const appleDir = `https://maps.apple.com/?daddr=${loc.lat},${loc.lng}&dirflg=w`;
+    const far = isFar(idx);   // beaches / ride-out spots: hand off to Google Maps (transit), no in-site walk route
+    const dir = `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}&destination_place_id=${loc.id}&travelmode=${far?'transit':'walking'}`;
+    const appleDir = `https://maps.apple.com/?daddr=${loc.lat},${loc.lng}&dirflg=${far?'r':'w'}`;
 
     body.innerHTML = `
       <span class="catpill" style="background:${cd.color}">${cd.label}</span>
@@ -677,12 +792,14 @@ async function openDetail(idx){
         ${priceEuro(place.priceLevel)?`<span class="badge price">${priceEuro(place.priceLevel)}</span>`:''}
         ${openNow===true?'<span class="openpill y">Open now</span>':openNow===false?'<span class="openpill n">Closed</span>':''}
       </div>
-      ${p._dist!=null?`<div class="hours">🚶 ${fmtDist(p._dist)} from your apartment · ${fmtWalk(p._dist)}</div>`:''}
+      ${detailDistLine(idx)}
       <div class="desc">${(place.editorialSummary&&place.editorialSummary.text)?esc(place.editorialSummary.text):p.blurb}</div>
       ${todayLine?`<div class="hours">🕒 Today: ${todayLine}</div>`:''}
       <div class="actions">
-        <button class="primary" onclick="showRoute(${idx})">🗺️ Show walking route here</button>
-        <a href="${dir}" target="_blank" rel="noopener">🧭 Open in Google Maps</a>
+        ${far
+          ? `<a class="primary" href="${dir}" target="_blank" rel="noopener">🧭 Directions in Google Maps</a>`
+          : `<button class="primary" onclick="showRoute(${idx})">🗺️ Show walking route here</button>
+        <a href="${dir}" target="_blank" rel="noopener">🧭 Open in Google Maps</a>`}
         <a href="${appleDir}" target="_blank" rel="noopener">🍎 Apple Maps</a>
         <button onclick="sharePlace()">📤 Share</button>
         ${place.websiteURI?`<a href="${place.websiteURI}" target="_blank" rel="noopener">🌐 Website</a>`:''}
@@ -697,7 +814,7 @@ async function openDetail(idx){
     body.innerHTML = `
       <span class="catpill" style="background:${cdF.color}">${cdF.label}</span>
       <h2>${esc(p.name)}</h2>
-      ${p._dist!=null?`<div class="hours">🚶 ${fmtDist(p._dist)} from your apartment · ${fmtWalk(p._dist)}</div>`:''}
+      ${detailDistLine(idx)}
       <div class="desc">${p.blurb}</div>
       <div class="hours">⚠ Couldn’t load live details (you may be offline) — but the essentials are here.</div>
       <div class="actions">
@@ -749,9 +866,12 @@ function wireControls(){
   $('#search').addEventListener('input', e=>{ state.q=e.target.value.trim(); applyFilters(); });
   $('#chips').addEventListener('click', e=>{ const b=e.target.closest('.chip'); if(!b) return;
     document.querySelectorAll('#chips .chip').forEach(c=>c.setAttribute('aria-pressed', c===b));
-    state.cat=b.dataset.cat; applyFilters(); });
+    state.cat=b.dataset.cat; syncToggleVisibility(); applyFilters(); });
   $('#toggles').addEventListener('click', e=>{ const b=e.target.closest('.toggle'); if(!b) return;
-    const f=b.dataset.f, on=b.getAttribute('aria-pressed')!=='true'; b.setAttribute('aria-pressed',on); state.filters[f]=on; applyFilters(); });
+    const f=b.dataset.f, on=b.getAttribute('aria-pressed')!=='true'; b.setAttribute('aria-pressed',on); state.filters[f]=on;
+    if(on && (f==='vegan'||f==='veganopt')){ const other=f==='vegan'?'veganopt':'vegan'; state.filters[other]=false; const ob=document.querySelector(`.toggle[data-f="${other}"]`); if(ob) ob.setAttribute('aria-pressed','false'); } // the two vegan toggles are mutually exclusive
+    applyFilters();
+    if(f==='open' && on) hydrateOpenNow(); });
   $('#closeBtn').addEventListener('click', closeDetail);
   $('#routeBack').addEventListener('click', exitRouteMode);    // leave the full-map route view
   $('#originToggle').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b) setRouteOrigin(b.dataset.o); });
@@ -761,6 +881,7 @@ function wireControls(){
   $('#sharePicks').addEventListener('click', sharePicks);
   map.addListener('click', ()=>{ if(!routeMode) closeDetail(); });   // tap empty map to dismiss the card (but not while viewing a route)
   map.addListener('dragstart', ()=>{ if(following){ following=false; $('#locateBtn').classList.remove('on'); } }); // stop GPS snap-back while you look around
+  syncToggleVisibility();   // start with only the relevant toggles shown for "All"
 }
 
 /* ---------- Live location (the blue dot) ---------- */
@@ -833,7 +954,7 @@ function showHelp(){
       <li><b>Tap any place</b> (list or pin) for its Google rating, reviews, photos, hours and Directions.</li>
       <li><b>“Show walking route here”</b> opens a full-screen map of the path. Switch between <b>🏠 from the apartment</b> and <b>📍 from where you are right now</b>, then tap <b>← Back</b> to return.</li>
       <li><b>Save favorites</b> with the ☆ star on each place, filter to <b>⭐ Favorites</b>, then tap <b>“Share my picks”</b> to send your shortlist to the group chat.</li>
-      <li><b>Filter</b> with the chips (Attractions / Eat / Bars) and toggles (🌱 vegan, 🌅 view, 🚶 walkable).</li>
+      <li><b>Filter</b> with the chips (Attractions / Eat / Bars / 🛒 Essentials). The toggles below change to fit what you’re viewing: <b>🟢 Open now</b> always, <b>🌱 Fully vegan</b> & <b>🥗 Vegan options</b> under Eat, <b>⚽ Football</b> under Bars, plus <b>🏖️ Beach</b>, <b>🌅 View</b> and <b>🚶 Walkable</b>.</li>
       <li><b>The ◎ button</b> shows your live location. Drag the map to look around; tap ◎ again to re-center on yourself.</li>
     </ol>
     <p>🏠 The orange pin is your apartment — distances and walk times are measured from there.</p>

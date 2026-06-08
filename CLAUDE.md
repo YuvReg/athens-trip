@@ -13,8 +13,8 @@ A small, good-looking **single web page** for a group trip to **Athens, Greece**
 It shows a **real Google Map** with curated pins for **attractions, bars, and
 vegan-friendly restaurants** near the group's apartment. Tap a pin → a card
 appears with the **real Google rating, number of reviews, review snippets,
-photos, open/closed status, price level**, and a **Directions** button that
-opens the native Google/Apple Maps app for walking navigation. The map also
+photos, open/closed status, price level**, plus a **walking route drawn right on
+our own map** (with a hand-off to Google Maps for live turn-by-turn). The map also
 shows the user's **live location ("blue dot")** as they walk, like Google Maps.
 
 It's a private trip page — 4 people, roughly a one-week stay. Not a commercial
@@ -52,8 +52,13 @@ These were already decided with the user. Build to them.
 4. **Inline info cards** — tapping a pin shows rating/reviews/photos/hours
    **on our page** (use Google's ready-made **Place Details** component where
    possible, so we don't hand-build the rating/review layout).
-5. **Directions buttons** open the **native Google/Apple Maps app** via deep
-   links — our site is for browsing, the native app is for turn-by-turn nav.
+5. **Walking routes draw on our own map.** Tapping "Show walking route here"
+   opens a full-screen route view (via Google's **Directions API**) with a
+   **🏠 from-apartment / 📍 from-me** origin switch; a **"turn-by-turn in Google
+   Maps"** deep link is the live-navigation hand-off.
+   *(Supersedes the original "site is browse-only, all navigation hands off to
+   the native app" decision — we now render the route ourselves and keep the
+   native app only as the turn-by-turn fallback.)*
 6. **Live "blue dot"** using the browser's **Geolocation** feature.
 7. **Cost target = $0.** Stay inside Google's free tier; lock it down (see §6).
 
@@ -69,14 +74,15 @@ stale — Google is the chosen path.
 
 | Piece | What it means | Status |
 |---|---|---|
-| **Content** | Curated lists of attractions, bars, vegan-friendly restaurants with short write-ups | ✅ Done — 42 places (17 attractions, 13 bars, 12 restaurants) |
+| **Content** | Curated attractions, bars, vegan-friendly restaurants, beach/Riviera spots, football bars & practical pins | ✅ Done — 65 places (21 attractions incl. 4 beach, 19 bars incl. 4 football, 15 restaurants, 10 essentials) |
 | **The map + pins** | Google Map with a colored pin per place, grouped by category | ✅ Built (classic `google.maps.Marker`) |
 | **Pin info cards** | Tap a pin → card with Google rating, reviews, photos, hours, directions | ✅ Built |
-| **Live location** | Map shows the user's live position and can follow them | ✅ Built (needs https host to work) |
+| **Live location** | Map shows the user's live position and can follow them | ✅ Built (works on the hosted https link) |
 
-> **Current overall status:** the site is **built** and lives in `index.html`.
-> The only thing left is the user's one manual step — create the Google API key,
-> paste it in, and host it. Full guide is in `SETUP.md`. See §10 for the checklist.
+> **Current overall status:** the site is **built, deployed, and live** at
+> https://gazi-haftaat-hatiul.netlify.app. The Google API key is created,
+> restricted, and quota-capped, and the site has been verified on desktop +
+> iPhone. The live checklist is §10; the user-facing setup guide is `SETUP.md`.
 
 ---
 
@@ -98,6 +104,10 @@ Everything lives in one `index.html`. The curated places sit in a `PLACES`
 array near the top (search the file for `const PLACES`) — that's the part the
 user edits to add/remove/fix a spot.
 
+**Local-only helper folders** (git-ignored, safe to delete — they're not part of
+the site): `_site/` (the copy pushed to Netlify on deploy), `_pwtest/` (the
+Playwright test script + screenshots), `.netlify/` (Netlify CLI state).
+
 ### The "places" data shape (as actually built — keep this consistent)
 Each place is one object in the `PLACES` array. We store only OUR own notes + a
 **search `query`** — **not** Google's review/rating text (see §6 legal note),
@@ -112,21 +122,31 @@ etc. are **resolved live at runtime** by `Place.searchByText(query)` and then
   query: "What to search on Google",           // drives live ID/coords/rating/photos
   area: "Neighborhood",                        // e.g. "Psyrri", "Monastiraki"
   tags: ["must", "view"],                      // optional flags used by filters
-  vegan: true,                                 // optional; marks fully-vegan spots (🌱)
+  vegan: 'full' | 'options',                   // optional; 'full' = 100% vegan (🌱),
+                                               //   'options' = veg-friendly w/ solid vegan dishes
   blurb: "Our own one-line write-up / why it's worth it"
 }
 ```
 
 ### Map behavior (as built)
 - Centered on the home base (§2) at a walking-distance zoom.
-- Pins **color-coded by category** (attractions / restaurants / bars).
+- Pins **color-coded by category** (attractions / restaurants / bars / 🛒 essentials).
 - A **🏠 orange home-base marker** for the apartment; distances/walk-times are
   measured from there.
 - Tapping a pin (or a list item) opens the inline info card with live Google
-  rating, reviews, photos, hours + Walking-directions / Call / Website buttons.
+  rating, reviews, photos, hours + Walking-route / Call / Website buttons.
 - A **◎ "locate me"** control + live blue dot via geolocation `watchPosition`.
-- **Filters:** Attractions / Eat / Bars, plus 🌱 fully vegan, 🌅 great view,
-  🚶 walkable.
+- **Filters (smart / context-sensitive):** category chips Attractions / Eat /
+  Bars / 🛒 Essentials; always-on toggles ⭐ favorites, 🟢 open now, 🚶 walkable;
+  plus context toggles that appear only for their category — 🌱 fully vegan &
+  🥗 vegan options (under Eat), ⚽ football (under Bars), 🏖️ beach, 🌅 great view.
+  "Open now" is computed in Athens time from cached opening hours (lazy-fetched).
+  Far spots (beaches / ride-outs) show tram/taxi distance + hand routing to the
+  Google Maps app instead of drawing a nonsensical 20 km walk.
+- **Extras:** a ☆ **favorite** star on every place + a **"Share my picks"**
+  button (sends the starred shortlist to the group chat); an **offline fallback
+  card** when Google can't load; a **🌅 golden-hour** badge in the late-afternoon
+  window; and the in-site full-screen **route mode** described in §3.
 
 ---
 
@@ -191,8 +211,10 @@ spots. When researching places:
 - **Bars:** real, well-reviewed local spots — not tourist traps.
 - **Attractions:** the genuinely worth-it sights, prioritized by closeness to
   the home base.
-- Capture each place's **exact lat/lng and Google Place ID** — the Place ID is
-  what powers the live rating/photos card.
+- For each place, nail down a **search `query`** specific enough that
+  `Place.searchByText` resolves the *correct* spot (right branch, right city).
+  We deliberately **don't** store lat/lng or Place IDs — they're resolved live
+  from the query at runtime (see §5) — so getting the query right is the job.
 - Prefer places within a **5–15 min walk** of Pl. Eleftherias 22; note when
   something further is worth the trip.
 
@@ -220,7 +242,7 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
 > Update this section as work progresses so anyone opening the project knows
 > where things stand.
 
-- [x] Curated places researched — 42 total (17 attractions, 13 bars, 12 restaurants)
+- [x] Curated places — 65 total (21 attractions incl. 4 beach, 19 bars incl. 4 football, 15 restaurants, 10 essentials)
 - [x] Place lookup wired (live via `Place.searchByText` + `localStorage` cache — no stored IDs)
 - [x] `index.html` map with Google Maps + color-coded pins + 🏠 home base
 - [x] Inline info cards (live rating, reviews, photos, hours)
@@ -229,7 +251,12 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
 - [x] **In-site walking route** — tap "Show walking route here" → full-screen map +
       turn-by-turn, with a **🏠 from apartment / 📍 from my location** origin switch
       and a ← Back button (Directions API; falls back to Google Maps if it ever fails)
-- [x] Filters (Attractions / Eat / Bars + 🌱 vegan / 🌅 view / 🚶 walkable)
+- [x] **Smart filters** — chips Attractions / Eat / Bars / 🛒 Essentials + context toggles
+      (⭐ favorites, 🟢 open now, 🌱 fully vegan, 🥗 vegan options, ⚽ football, 🏖️ beach, 🌅 view, 🚶 walkable)
+- [x] **Beach / Riviera** spots (Glyfada / Vouliagmeni / Alimos) — far places show tram/taxi + Google-Maps transit hand-off
+- [x] **Football bars** for the World Cup (Athens Sports Bar, James Joyce, Lucky Sparrow, Beer Academy — web-verified)
+- [x] **Open now** badges + filter (Athens-time, computed from cached opening hours, lazy-fetched)
+- [x] **Practical pins** (supermarket, central market, pharmacy, metros, late-night food, coffee, ATM)
 - [x] **API key created, restricted (referrer + APIs), quota-capped** by the user
 - [x] **Hosted on HTTPS** → https://gazi-haftaat-hatiul.netlify.app (Netlify)
 - [x] One-finger map gestures (`greedy`); verified live on desktop + iPhone via Playwright
