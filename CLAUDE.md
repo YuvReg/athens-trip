@@ -49,6 +49,9 @@ These were already decided with the user. Build to them.
 3. **Vegan filter = "veg-friendly with solid vegan options."** Restaurants don't
    have to be 100% vegan, but each must have genuinely good, clearly-labeled
    vegan dishes — not just "a salad." Verify this per place during research.
+   *(Amended 2026-06-08: the user also asked to add top-rated **non-vegan**
+   restaurants nearby — these carry a 🍖 "not vegan" badge and omit the `vegan`
+   field, so the 🌱/🥗 vegan filters still correctly match only the vegan spots.)*
 4. **Inline info cards** — tapping a pin shows rating/reviews/photos/hours
    **on our page** (use Google's ready-made **Place Details** component where
    possible, so we don't hand-build the rating/review layout).
@@ -74,7 +77,7 @@ stale — Google is the chosen path.
 
 | Piece | What it means | Status |
 |---|---|---|
-| **Content** | Curated attractions, bars, vegan-friendly restaurants, beach/Riviera spots, football bars & practical pins | ✅ Done — 65 places (21 attractions incl. 4 beach, 18 bars incl. 3 football, 14 restaurants, 12 essentials split into 🛒 3 shops / 🚆 4 transit / 🏧 2 money / 🍴 3 quick-bites). Count went 65→63 in a closure sweep (removed Crudo + Beer Academy; renamed/repointed Mariloulou, Mama Tierra, Taf Coffee), then +2 back to 65 (added Airport Bus X95 + ONExchange when Essentials was split into 4 categories). |
+| **Content** | Curated attractions, bars, vegan **& non-vegan** restaurants, beach/Riviera spots, football bars & practical pins | ✅ Done — **92 places** (21 attractions incl. 4 beach, 22 bars incl. 3 football, 26 restaurants incl. 6 non-vegan, 23 essentials → 🛒 14 shops / 🚆 4 transit / 🏧 2 money / 🍴 3 quick-bites). History: 65→63 closure sweep → 65 (Essentials split, +2) → **92** after a within-1 km expansion (+27: shops/pharmacies with no rating bar + restaurants/bars filtered to Google **≥4.6**). |
 | **The map + pins** | Google Map with a colored pin per place, grouped by category | ✅ Built (classic `google.maps.Marker`) |
 | **Pin info cards** | Tap a pin → card with Google rating, reviews, photos, hours, directions | ✅ Built |
 | **Live location** | Map shows the user's live position and can follow them | ✅ Built (works on the hosted https link) |
@@ -128,7 +131,8 @@ etc. are **resolved live at runtime** by `Place.searchByText(query)` and then
   area: "Neighborhood",                        // e.g. "Psyrri", "Monastiraki"
   tags: ["must", "view"],                      // optional flags used by filters
   vegan: 'full' | 'options',                   // optional; 'full' = 100% vegan (🌱),
-                                               //   'options' = veg-friendly w/ solid vegan dishes
+                                               //   'options' = veg-friendly w/ solid vegan dishes;
+                                               //   OMIT on a restaurant = not vegan → 🍖 "not vegan" tag
   book: "https://reservation-url",             // optional (restaurants/bars); a verified online-booking
                                                //   link (TheFork / e-restaurants / venue site). OMIT if
                                                //   walk-in/phone-only → card shows greyed "No online booking"
@@ -280,7 +284,7 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
 > Update this section as work progresses so anyone opening the project knows
 > where things stand.
 
-- [x] Curated places — 65 total (21 attractions incl. 4 beach, 18 bars incl. 3 football, 14 restaurants, 12 essentials → 🛒 3 shops / 🚆 4 transit / 🏧 2 money / 🍴 3 quick-bites)
+- [x] Curated places — **92 total** (21 attractions incl. 4 beach, 22 bars incl. 3 football, 26 restaurants incl. 6 non-vegan, 23 essentials → 🛒 14 shops / 🚆 4 transit / 🏧 2 money / 🍴 3 quick-bites)
 - [x] **Data accuracy sweep (closures/rebrands)** via `_pwtest/audit.mjs` (compares each place's live Google name + `businessStatus` to ours): renamed Los Vegans→**Mariloulou**, repointed **Mama Tierra**→Acropolis branch, **Dope Roasting**→**Taf Coffee**, removed **Crudo** (now a fish taverna) + **Beer Academy** (→"beertime", unverified for football); kept **six d.o.g.s** (Google "closed" flag is stale). Re-run `audit.mjs` before a trip to re-check. Temp-closed to watch: Kerameikos, Avocado, A for Athens, Holy Spirit.
 - [x] Place lookup wired (live via `Place.searchByText` + `localStorage` cache — no stored IDs)
 - [x] `index.html` map with Google Maps + color-coded pins + 🏠 home base
@@ -309,6 +313,7 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
 - [x] **Football bars** for the World Cup (Athens Sports Bar, James Joyce, Lucky Sparrow — web-verified; Beer Academy dropped in the accuracy sweep)
 - [x] **Open now** badges + filter (Athens-time, computed from cached opening hours, lazy-fetched)
 - [x] **Essentials split into 4 categories** (2026-06-08) — 🛒 Shops (supermarket, central market, pharmacy), 🚆 Transit (3 metros + the NEW 24/7 Airport Bus X95 at Syntagma), 🏧 Money (National Bank ATM + NEW ONExchange currency exchange for USD→EUR cash), 🍴 Quick bites (late-night souvlaki/gyros + Taf Coffee). Each its own top-level chip + map-pin colour; +2 web-verified pins. Verified live desktop + iPhone (0 console errors).
+- [x] **Within-1 km expansion (+27 → 92 places)** (2026-06-08) — found NEW spots near the apartment and added those meeting the user's rules: **11 shops/pharmacies** (no rating bar — 4 supermarkets, Hondos/Ermou/Attica, 4 pharmacies incl. Bakakos & Bartzis), **12 restaurants** (6 vegan + 6 top-rated **non-vegan**) and **4 bars** (Cinque, BackdooR, Old Fashioned, Bad Tooth) — restaurants/bars all **Google ≥4.6**. Non-vegan restaurants show a 🍖 "not vegan" badge. Verified live desktop + iPhone (0 console errors).
 - [x] **API key created, restricted (referrer + APIs), quota-capped** by the user
 - [x] **Hosted on HTTPS** → **https://yuvreg.github.io/athens-trip/** (GitHub Pages — primary,
       free-forever, publish = `git push`). Old https://gazi-haftaat-hatiul.netlify.app kept as backup.
