@@ -129,6 +129,9 @@ etc. are **resolved live at runtime** by `Place.searchByText(query)` and then
   tags: ["must", "view"],                      // optional flags used by filters
   vegan: 'full' | 'options',                   // optional; 'full' = 100% vegan (🌱),
                                                //   'options' = veg-friendly w/ solid vegan dishes
+  book: "https://reservation-url",             // optional (restaurants/bars); a verified online-booking
+                                               //   link (TheFork / e-restaurants / venue site). OMIT if
+                                               //   walk-in/phone-only → card shows greyed "No online booking"
   blurb: "Our own one-line write-up / why it's worth it"
 }
 ```
@@ -278,6 +281,9 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
 - [x] **In-site walking route** — tap "Show walking route here" → full-screen map +
       turn-by-turn, with a **🏠 from apartment / 📍 from my location** origin switch
       and a ← Back button (Directions API; falls back to Google Maps if it ever fails)
+- [x] **🍽️ "Book a table" button** on restaurant/bar cards — active reservation link when the place has
+      verified online booking (`book` field; 6 set: Los Vegans/Avocado on e-restaurants, Krabo/Bolivar/360/MoMix
+      on own sites), else greyed "No online booking". Header personalised to "Athens ~ Gazi Al Tadlik Et Duma".
 - [x] **🏠 House home-marker + walk-me-home + 📏 ruler** — apartment is a house-shaped
       inline-SVG marker; tap it OR the new 🏠 button (stacked above ◎ locate, bottom-right)
       to route home from your live location; 📏 ruler button measures distance between
