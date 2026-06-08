@@ -198,6 +198,9 @@
   .actions .book{grid-column:1/-1; background:#2e9e5b; color:#fff; border-color:transparent}   /* 🍽️ reserve = green, distinct from the blue route button */
   .actions .book.off{background:#eef1f5; color:#9bb0c1; border-color:var(--line); cursor:default}   /* greyed = no online booking */
   .actions .book.off:hover{filter:none}
+  .actions .wa{grid-column:1/-1; background:#25D366; color:#fff; border-color:transparent}   /* 💬 WhatsApp = brand green (works on WiFi, unlike a normal phone call) */
+  .actions .wa.off{background:#eef1f5; color:#9bb0c1; border-color:var(--line); cursor:default}   /* greyed = this venue isn't reachable on WhatsApp */
+  .actions .wa.off:hover{filter:none}
   .reviews{margin-top:16px; border-top:1px solid var(--line); padding-top:13px}
   .reviews h4{font-size:13px; margin:0 0 9px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px}
   .rev{display:flex; gap:9px; margin-bottom:12px}
@@ -343,6 +346,10 @@
    • price : optional — '€' | '€€' | '€€€'
    • book  : optional — reservation URL (TheFork / e-restaurants / venue's own page).
              Omit it if the place is walk-in / phone-only → card shows "No online booking".
+   • wa    : optional — the venue's WhatsApp number, e.g. '+30 698 156 3511'. Shows a
+             "💬 WhatsApp" button that works on WiFi (no SIM / no phone plan needed). Omit
+             → card shows greyed "No WhatsApp". Only add a number you've VERIFIED is really
+             on WhatsApp (a Greek +30 69… mobile) — landlines (+30 21…) are not on WhatsApp.
    ===================================================================== */
 const BASE = { lat: 37.98186, lng: 23.72361 }; // Plateia Eleftherias / Koumoundourou Sq
 
@@ -369,8 +376,8 @@ const PLACES = [
   // ---- RESTAURANTS (vegan / vegan-friendly) ----
   {cat:'restaurant', name:'Mariloulou', query:'Mariloulou, Plateon 37, Athens', area:'Metaxourgeio', vegan:'full', price:'€€', blurb:'Plant-based Greek bistro ~5 min from your door — the rebrand of the former Los Vegans. Vegan soutzoukakia, moussaka and mezze in a cozy food-and-art room.'},
   {cat:'restaurant', name:'Veganistan', query:'Veganistan, Keramikou 101, Athens', area:'Kerameikos', vegan:'full', price:'€', blurb:'Cozy, local deli for cruelty-free salads, soups, snacks and mezze — right by the square.'},
-  {cat:'restaurant', name:'The Place', query:'The Place, Persefonis, Kerameikos, Athens', area:'Kerameikos', vegan:'options', price:'€€', blurb:'Leafy garden courtyards by Kerameikos metro; all-day brunch-to-cocktails with clear vegan picks.'},
-  {cat:'restaurant', name:'Kokkion', query:'Kokkion, Protogenous 2, Psyrri, Athens', area:'Psyrri', vegan:'options', price:'€', blurb:'Beloved Psyrri gelato shop with a rich line of 100% vegan, dairy-free sorbet flavours.'},
+  {cat:'restaurant', name:'The Place', query:'The Place, Persefonis, Kerameikos, Athens', area:'Kerameikos', vegan:'options', price:'€€', wa:'+30 697 211 7800', blurb:'Leafy garden courtyards by Kerameikos metro; all-day brunch-to-cocktails with clear vegan picks.'},
+  {cat:'restaurant', name:'Kokkion', query:'Kokkion, Protogenous 2, Psyrri, Athens', area:'Psyrri', vegan:'options', price:'€', wa:'+30 698 156 3511', blurb:'Beloved Psyrri gelato shop with a rich line of 100% vegan, dairy-free sorbet flavours.'},
   {cat:'restaurant', name:'Feyrouz', query:'Feyrouz, Karori 23, Psyrri, Athens', area:'Psyrri', vegan:'options', price:'€', blurb:'Family-run Levantine gem — vegan lahmacun (zaatar &amp; walnut), lentil soup and salads. Closed Sundays.'},
   {cat:'restaurant', name:'Plan(e)t Ice Cream', query:'Plan(e)t Ice Cream, Ermou 86, Athens', area:'Monastiraki', vegan:'full', price:'€', blurb:'World-first plant-based, carbon-negative oat ice cream — many sugar-free scoops, on Ermou.'},
   {cat:'restaurant', name:'Falafellas', query:'Falafellas, Aiolou 51, Athens', area:'Monastiraki', vegan:'options', price:'€', blurb:'Cult falafel wraps since 2010 — crispy, fluffy, cheap and fully vegan when you skip the yogurt.'},
@@ -384,7 +391,7 @@ const PLACES = [
   {cat:'bar', name:'The Clumsies', query:'The Clumsies, Praxitelous 30, Athens', area:'Center', blurb:'Athens’ most famous bar — a perennial World’s 50 Best — flawless, inventive cocktails in a neoclassical townhouse.'},
   {cat:'bar', name:'Line', query:'Line cocktail bar, Kolokotroni, Athens', book:'https://www.i-host.gr/Reservations/New?restaurant=589&channel=fb&lang=eng', area:'Center', blurb:'No. 8 in the World’s 50 Best Bars 2025 — sleek, zero-waste, farm-to-glass drinks by the Clumsies team.'},
   {cat:'bar', name:'Baba au Rum', query:'Baba au Rum, Klitiou 6, Athens', area:'Center', blurb:'400+ rums and tiki-tinged classics — a World’s 50 Best “Legend of the List”.'},
-  {cat:'bar', name:'The Bar in Front of the Bar', query:'The Bar in Front of the Bar, Athens', area:'Center', blurb:'Tiny street-side standing bar — 8 daily cocktails made from kitchen scraps. New to World’s 50 Best 2025.'},
+  {cat:'bar', name:'The Bar in Front of the Bar', query:'The Bar in Front of the Bar, Athens', area:'Center', wa:'+30 698 063 5896', blurb:'Tiny street-side standing bar — 8 daily cocktails made from kitchen scraps. New to World’s 50 Best 2025.'},
   {cat:'bar', name:'Noel', query:'Noel bar, Kolokotroni 59, Athens', book:'https://www.i-host.gr/Reservations/New?restaurant=133&channel=instagram', area:'Center', blurb:'Year-round Christmas glam in a hidden arcade — theatrical decor, jazz &amp; funk, and genuinely excellent cocktails.'},
   {cat:'bar', name:'MoMix Bar', query:'MoMix Bar, Psyrri, Athens', book:'https://momixbar.com/reservation/', area:'Psyrri', blurb:'Molecular mixology — “drinks in solid form” — a fun, theatrical change of pace in the heart of Psyrri.'},
   {cat:'bar', name:'Six d.o.g.s', query:'Six d.o.g.s, Avramiotou 6-8, Athens', area:'Psyrri', blurb:'Grungy-cool multi-space — hidden garden drinks early, DJs and live music late. A Psyrri institution.'},
@@ -398,7 +405,7 @@ const PLACES = [
   // ---- SPORTS BARS (verified to show live football — great for the World Cup ⚽) ----
   {cat:'bar', name:'Athens Sports Bar', query:'Athens Sports Bar, Athens', area:'Makrygianni', tags:['sport'], blurb:'Athens’ dedicated sports bar — 8 big HD screens showing all the football incl. the World Cup, craft beer + bar food. ~15 min walk.'},
   {cat:'bar', name:'James Joyce Irish Pub', query:'The James Joyce Irish Pub, Athens', area:'Monastiraki', tags:['sport'], blurb:'Lively Monastiraki Irish pub — 3 screens locked on the match, Guinness on tap, proper pub grub. Fills up on big games.'},
-  {cat:'bar', name:'The Lucky Sparrow', query:'The Lucky Sparrow Pub, Kerameikos, Athens', area:'Kerameikos', tags:['sport'], blurb:'Craft-beer & rock pub by Kerameikos metro (4.8★) that beams the big matches — late hours suit the World Cup’s evening kickoffs.'},
+  {cat:'bar', name:'The Lucky Sparrow', query:'The Lucky Sparrow Pub, Kerameikos, Athens', area:'Kerameikos', tags:['sport'], wa:'+30 697 502 6836', blurb:'Craft-beer & rock pub by Kerameikos metro (4.8★) that beams the big matches — late hours suit the World Cup’s evening kickoffs.'},
 
   // ---- BEACH / ATHENS RIVIERA (a tram or taxi ride south — 🏖️) ----
   {cat:'attraction', name:'Lake Vouliagmeni', query:'Lake Vouliagmeni, Vouliagmeni', area:'Vouliagmeni', tags:['beach','ride','view'], blurb:'Surreal warm mineral lake (22–29°C all year) ringed by cliffs — swim + a free little “fish spa”. ~30 min by taxi/tram.'},
@@ -407,7 +414,7 @@ const PLACES = [
   {cat:'attraction', name:'Glyfada Beach (Asteras)', query:'Asteras Beach, Glyfada', area:'Glyfada', tags:['beach','ride'], blurb:'Lively, sandy, younger-crowd beach with bars and food steps away — the easy, fun Riviera default. Tram from the centre.'},
   {cat:'restaurant', name:'Yi (raw vegan)', query:'Yi raw vegan, Glyfada', area:'Glyfada', vegan:'full', price:'€€', tags:['beach','ride'], blurb:'Chic raw-vegan café — Greek salad with cashew “feta”, chia bowls, carrot cake. Light, healthy seaside brunch.'},
   {cat:'bar', name:'Holy Spirit Cocktail Bar', query:'Holy Spirit Cocktail Bar, Glyfada', area:'Glyfada', tags:['beach','ride'], blurb:'Award-winning Glyfada cocktail bar — playful, well-priced drinks and a fun young crowd. A great Riviera night out.'},
-  {cat:'bar', name:'Bolivar Beach Bar', query:'Bolivar Beach Bar, Alimos', book:'https://www.i-host.gr/Reservations/New?restaurant=2113&channel=website&lang=eng', area:'Alimos', tags:['beach','ride','view'], blurb:'Iconic palm-fringed beach club — DJ sunsets that roll into a dance floor. Closest Riviera beach bar to the centre.'},
+  {cat:'bar', name:'Bolivar Beach Bar', query:'Bolivar Beach Bar, Alimos', book:'https://www.i-host.gr/Reservations/New?restaurant=2113&channel=website&lang=eng', area:'Alimos', tags:['beach','ride','view'], wa:'+30 697 036 7684', blurb:'Iconic palm-fringed beach club — DJ sunsets that roll into a dance floor. Closest Riviera beach bar to the centre.'},
   {cat:'restaurant', name:'Krabo', query:'Krabo, Vouliagmeni', book:'https://krabo.gr/reservations/', area:'Vouliagmeni', price:'€€€', tags:['beach','ride','view'], blurb:'Secluded wood-and-wicker beach restaurant on the sand with Astir views — sunset dinner that becomes a cool beach club.'},
 
   // ---- ESSENTIALS / PRACTICAL (everyday stuff near the apartment — 🛒) ----
@@ -899,11 +906,13 @@ async function openDetail(idx){
         ${(p.cat==='restaurant'||p.cat==='bar') ? (p.book
           ? `<a class="book" href="${p.book}" target="_blank" rel="noopener">🍽️ ${/thefork\./.test(p.book)?'Book on TheFork':/e-(restaurants|table)\./.test(p.book)?'Book on e-restaurants':'Book a table'}</a>`
           : `<span class="book off">🍽️ No online booking</span>`) : ''}
+        ${(p.cat==='restaurant'||p.cat==='bar') ? (p.wa
+          ? `<a class="wa" href="https://wa.me/${p.wa.replace(/[^\d]/g,'')}?text=${encodeURIComponent("Hello! I'd like to ask a quick question.")}" target="_blank" rel="noopener">💬 WhatsApp</a>`
+          : `<span class="wa off">💬 No WhatsApp</span>`) : ''}
         ${!far?`<a href="${dir}" target="_blank" rel="noopener">🧭 Open in Google Maps</a>`:''}
         <a href="${appleDir}" target="_blank" rel="noopener">🍎 Apple Maps</a>
         <button onclick="sharePlace()">📤 Share</button>
         ${place.websiteURI?`<a href="${place.websiteURI}" target="_blank" rel="noopener">🌐 Website</a>`:''}
-        ${place.nationalPhoneNumber?`<a href="tel:${place.nationalPhoneNumber.replace(/\s/g,'')}">📞 Call</a>`:''}
       </div>
       ${renderReviews(place.reviews)}`;
   }catch(e){ console.error(e);
