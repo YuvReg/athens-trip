@@ -744,6 +744,20 @@ async function init(){
     });
     homeMarker.addListener('click', ()=> measureMode ? addMeasurePoint(homeMarker.getPosition()) : showRouteToHome());   // 📏 while measuring, tapping the house measures TO the apartment
 
+    // ── Smooth pinch-zoom: the 92 place pins use the older "heavy" marker type, so the
+    // phone re-draws all of them every frame while you pinch — that's the zoom lag. Fix:
+    // while two fingers are pinching, hide the place pins (the 🏠 home pin stays as an
+    // anchor) and bring them back the instant you lift your fingers / the map settles.
+    // They're only gone during the pinch itself.
+    let pinsHidden=false, pinching=false;
+    const hidePins=()=>{ if(pinsHidden) return; pinsHidden=true; PLACES.forEach(p=>{ if(p._marker) p._marker.setVisible(false); }); };
+    const showPins=()=>{ if(!pinsHidden || pinching) return; pinsHidden=false; PLACES.forEach((p,idx)=>{ if(p._marker) p._marker.setVisible(visible(idx)); }); };
+    const mapEl=$('#map');
+    mapEl.addEventListener('touchstart', e=>{ if(e.touches && e.touches.length>=2){ pinching=true; hidePins(); } }, {passive:true});   // 2 fingers = a pinch
+    mapEl.addEventListener('touchend',  e=>{ if(!e.touches || e.touches.length<2){ pinching=false; setTimeout(showPins,120); } }, {passive:true});
+    mapEl.addEventListener('touchcancel', ()=>{ pinching=false; setTimeout(showPins,120); }, {passive:true});
+    map.addListener('idle', showPins);   // also bring pins back whenever the map settles (but not mid-pinch)
+
     buildList();
     wireControls();
     resolveAll();
