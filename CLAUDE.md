@@ -239,6 +239,13 @@ finished page must be **hosted**, not just emailed around.
   `index.html` → `git add -A && git commit && git push`. GitHub Pages **auto-rebuilds
   in ~1 min**. That's it. **Cost = $0, unlimited, forever.** No CLI, no `_site/` copy,
   no per-deploy cost.
+- **⛔ Push ONLY when the user says "finalized" — never on the go (agreed 2026-06-18).**
+  The `git push` is the *only* thing that makes a change live for the group. Editing
+  `index.html` on disk changes **nothing** live until the push, so there is no rush:
+  make changes, verify them locally, show the user, and **wait for the user's explicit
+  "this is final / push it" before pushing.** Do not push speculative or mid-experiment
+  work. (A push is reversible — `git revert` puts the old version back live in ~1 min —
+  but the default is still: don't push until told.)
 - **⚠️ Do NOT deploy to Netlify anymore.** Netlify switched to a per-deploy "credits"
   model and ~14 test deploys burned almost the whole monthly free allowance
   (210 credits). It never charged money (free plan, no card → it just pauses), but
@@ -287,6 +294,14 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
 ## 9. Working rules for anyone editing this project
 
 - **Keep all files inside this project folder.** No scratch files in temp dirs.
+- **📱 Mobile is the ONLY target — desktop does not matter (agreed 2026-06-18).** The group
+  uses this purely on phones (the user on **Android**, friends on assorted **iPhones**).
+  Design, build, and **verify for mobile only**; do not spend effort optimizing or testing
+  the desktop layout. (Just don't gratuitously *break* desktop — but it is never a target
+  and never needs checking.) **This overrides the general "test desktop + mobile" habit for
+  THIS project.** When testing, use a phone-width viewport (e.g. ~393×851).
+- **⛔ Don't push until the user says "finalized"** — make/verify locally, then wait for the
+  user's go-ahead before `git push`. Full rule + why in §7.
 - **The places list is the user-facing knob** — keep it tidy, commented, and
   easy for a non-coder to edit (one place per object, plain-English notes).
 - **Explain choices in plain language** in code comments where a non-coder might
