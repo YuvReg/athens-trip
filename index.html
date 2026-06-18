@@ -502,6 +502,9 @@ const CAT = {
 /* ---------- Load Google Maps (only if a real key is present) ---------- */
 const KEY = window.GOOGLE_MAPS_API_KEY || "";
 const KEY_OK = KEY && !KEY.startsWith("YOUR_") && KEY.length > 20;
+// 🔧 Zoom diagnostic flag: open the site with ?nopins to load the map WITHOUT the 92
+// place pins. If pinch-zoom is smooth this way but laggy normally, the pins are the cause.
+const NOPINS = new URLSearchParams(location.search).has('nopins');
 if (KEY_OK) {
   (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
     key: KEY, v: "weekly", language: "en", region: "GR",
@@ -744,6 +747,7 @@ async function init(){
     buildList();
     wireControls();
     resolveAll();
+    if(NOPINS) toast('🔧 Zoom test: map pins are OFF — pinch-zoom now to compare');
   }catch(err){ console.error(err); showErrorOverlay(err); buildList(); }
 }
 
@@ -785,10 +789,12 @@ async function resolveOne(idx){
     RES[idx]=loc;
     p._dist = haversine(BASE, {lat:loc.lat, lng:loc.lng});
 
-    // marker
-    const m = new Marker({ map, position:{lat:loc.lat,lng:loc.lng}, title:p.name, icon:pin(CAT[p.cat].color, 8.5) });
-    m.addListener('click', ()=> measureMode ? addMeasurePoint(m.getPosition()) : openDetail(idx));   // 📏 while measuring, tapping a pin drops a point ON it instead of opening it
-    p._marker = m;
+    // marker (skipped when ?nopins is set — the zoom-performance diagnostic; see NOPINS above)
+    if(!NOPINS){
+      const m = new Marker({ map, position:{lat:loc.lat,lng:loc.lng}, title:p.name, icon:pin(CAT[p.cat].color, 8.5) });
+      m.addListener('click', ()=> measureMode ? addMeasurePoint(m.getPosition()) : openDetail(idx));   // 📏 while measuring, tapping a pin drops a point ON it instead of opening it
+      p._marker = m;
+    }
     applyFiltersToOne(idx);
     updateListMeta(idx);
     if(state.filters.walk) applyFilters(); // distances now known → refresh walkable list & count
