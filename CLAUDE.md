@@ -355,4 +355,22 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
       free-forever, publish = `git push`). Old https://gazi-haftaat-hatiul.netlify.app kept as backup.
       Verified working on the github.io link (desktop + iPhone, 0 console errors) on 2026-06-08.
 - [x] One-finger map gestures (`greedy`); verified live on desktop + iPhone via Playwright
+- [x] **Mobile performance pass (2026-06-18).** Two changes shipped:
+      **(1) List/layout** — the mobile map is now a **fixed top panel** and the filters+list
+      scroll in their own contained scroller (was: the whole page scrolling under a
+      `position:sticky` live map), plus `content-visibility:auto` on cards. Lightens list
+      scrolling. *(Note: the user's real complaint turned out to be map **zoom**, not list
+      scroll — see next item. Lesson logged: characterise "slow" on the real device before
+      picking a fix.)*
+      **(2) Pinch-zoom** — root-caused (via a **`?nopins`** URL debug switch — append
+      `?nopins` to load the map with NO place pins) to the **92 classic `google.maps.Marker`
+      pins** (the phone repositions all 92 every frame during a pinch) **+ the map's raster
+      rendering** (no vector `mapId`). Shipped fix: **hide the place pins during a 2-finger
+      pinch** (🏠 home pin stays), restore on `touchend`/`idle`. Real-device result:
+      **"better, not fully smooth."** The remaining un-smoothness is the **raster** rendering;
+      the real cure is a **vector map** — create a vector **Map ID** in the Cloud console,
+      move the custom `MAP_STYLE` to a cloud map style (or accept default styling), and ideally
+      migrate to **`AdvancedMarkerElement`**. **DEFERRED by the user** — "better" is good enough
+      for a 1-week trip; revisit the vector route if wanted. The `?nopins` switch is left in
+      (harmless; only active with the URL param).
 - [ ] Final on-the-phone check by the group during the trip (nice-to-have)
