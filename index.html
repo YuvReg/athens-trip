@@ -93,8 +93,7 @@
   .list{overflow-y:auto; padding:8px 12px 24px; min-height:0; flex:1}
   .card{
     background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 13px; margin-bottom:10px;
-    cursor:pointer; transition:box-shadow .15s, transform .15s, border-color .15s; position:relative;
-    content-visibility:auto; contain-intrinsic-size:auto 120px;   /* skip rendering off-screen cards → smooth scroll through all 92 (ignored by old browsers, so no regression) */
+    cursor:pointer; transition:.15s; position:relative;
   }
   .card:hover{box-shadow:var(--shadow); transform:translateY(-1px); border-color:#d4e4ef}
   .card.active{border-color:var(--sea-2); box-shadow:0 0 0 3px rgba(30,136,199,.15)}
@@ -232,17 +231,11 @@
 
   /* ---------- Mobile ---------- */
   @media (max-width:880px){
-    /* App-like layout: the map is a FIXED panel at the top; the filters + list scroll
-       beneath it inside their OWN contained scroller (.sidebar). The old design pinned
-       the live map with position:sticky while the whole PAGE scrolled — that forces the
-       browser to re-paint the heavy live map on every scroll frame (the slow scrolling
-       path), which is what made it feel laggy on phones. Containing the scroll here keeps
-       the map perfectly still and lets the list scroll on the fast path. */
-    .app{grid-template-rows:auto 1fr; height:100dvh; min-height:0}
-    .main{display:flex; flex-direction:column; min-height:0}
-    .mapwrap{height:46dvh; position:relative; z-index:20; order:-1; flex:none; box-shadow:0 6px 18px rgba(10,40,70,.18)}
-    .sidebar{border-right:none; flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain}
-    .list{overflow:visible; flex:none}
+    .app{grid-template-rows:auto auto 1fr; height:auto; min-height:100%}
+    .main{display:flex; flex-direction:column}
+    .mapwrap{height:46vh; position:sticky; top:0; z-index:20; order:-1; box-shadow:0 6px 18px rgba(10,40,70,.18)}
+    .sidebar{border-right:none}
+    .list{max-height:none; overflow:visible}
     header.top h1{font-size:20px}
     .detail{
       position:fixed; z-index:100;
@@ -502,9 +495,6 @@ const CAT = {
 /* ---------- Load Google Maps (only if a real key is present) ---------- */
 const KEY = window.GOOGLE_MAPS_API_KEY || "";
 const KEY_OK = KEY && !KEY.startsWith("YOUR_") && KEY.length > 20;
-// 🔧 Zoom diagnostic flag: open the site with ?nopins to load the map WITHOUT the 92
-// place pins. If pinch-zoom is smooth this way but laggy normally, the pins are the cause.
-const NOPINS = new URLSearchParams(location.search).has('nopins');
 if (KEY_OK) {
   (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
     key: KEY, v: "weekly", language: "en", region: "GR",
@@ -744,24 +734,9 @@ async function init(){
     });
     homeMarker.addListener('click', ()=> measureMode ? addMeasurePoint(homeMarker.getPosition()) : showRouteToHome());   // 📏 while measuring, tapping the house measures TO the apartment
 
-    // ── Smooth pinch-zoom: the 92 place pins use the older "heavy" marker type, so the
-    // phone re-draws all of them every frame while you pinch — that's the zoom lag. Fix:
-    // while two fingers are pinching, hide the place pins (the 🏠 home pin stays as an
-    // anchor) and bring them back the instant you lift your fingers / the map settles.
-    // They're only gone during the pinch itself.
-    let pinsHidden=false, pinching=false;
-    const hidePins=()=>{ if(pinsHidden) return; pinsHidden=true; PLACES.forEach(p=>{ if(p._marker) p._marker.setVisible(false); }); };
-    const showPins=()=>{ if(!pinsHidden || pinching) return; pinsHidden=false; PLACES.forEach((p,idx)=>{ if(p._marker) p._marker.setVisible(visible(idx)); }); };
-    const mapEl=$('#map');
-    mapEl.addEventListener('touchstart', e=>{ if(e.touches && e.touches.length>=2){ pinching=true; hidePins(); } }, {passive:true});   // 2 fingers = a pinch
-    mapEl.addEventListener('touchend',  e=>{ if(!e.touches || e.touches.length<2){ pinching=false; setTimeout(showPins,120); } }, {passive:true});
-    mapEl.addEventListener('touchcancel', ()=>{ pinching=false; setTimeout(showPins,120); }, {passive:true});
-    map.addListener('idle', showPins);   // also bring pins back whenever the map settles (but not mid-pinch)
-
     buildList();
     wireControls();
     resolveAll();
-    if(NOPINS) toast('🔧 Zoom test: map pins are OFF — pinch-zoom now to compare');
   }catch(err){ console.error(err); showErrorOverlay(err); buildList(); }
 }
 
@@ -803,12 +778,10 @@ async function resolveOne(idx){
     RES[idx]=loc;
     p._dist = haversine(BASE, {lat:loc.lat, lng:loc.lng});
 
-    // marker (skipped when ?nopins is set — the zoom-performance diagnostic; see NOPINS above)
-    if(!NOPINS){
-      const m = new Marker({ map, position:{lat:loc.lat,lng:loc.lng}, title:p.name, icon:pin(CAT[p.cat].color, 8.5) });
-      m.addListener('click', ()=> measureMode ? addMeasurePoint(m.getPosition()) : openDetail(idx));   // 📏 while measuring, tapping a pin drops a point ON it instead of opening it
-      p._marker = m;
-    }
+    // marker
+    const m = new Marker({ map, position:{lat:loc.lat,lng:loc.lng}, title:p.name, icon:pin(CAT[p.cat].color, 8.5) });
+    m.addListener('click', ()=> measureMode ? addMeasurePoint(m.getPosition()) : openDetail(idx));   // 📏 while measuring, tapping a pin drops a point ON it instead of opening it
+    p._marker = m;
     applyFiltersToOne(idx);
     updateListMeta(idx);
     if(state.filters.walk) applyFilters(); // distances now known → refresh walkable list & count
