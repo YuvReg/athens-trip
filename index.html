@@ -343,6 +343,11 @@
 </div>
 <div class="toast" id="toast"></div>
 
+<!-- Marker-clustering library: groups nearby pins into numbered bubbles so the phone draws only
+     a handful of markers at a time (smooth pan/zoom even with lots of places). From a CDN; if it
+     fails to load, the map silently falls back to plain pins (see useCluster below). -->
+<script src="https://cdn.jsdelivr.net/npm/@googlemaps/markerclusterer@2.5.3/dist/index.min.js"></script>
+
 <script>
 /* =====================================================================
    THE PLACES  — curated for Pl. Eleftherias 22, Athens
@@ -493,6 +498,7 @@ if (KEY_OK) {
 
 /* ---------- State ---------- */
 let map, Place, Marker, Circle, userMarker, accCircle, following=false, watchId=null, detailToken=0;
+let clusterer=null, useCluster=false, _syncTimer=null;   // marker clustering (perf): clusterer instance + on/off flag + debounce timer
 let favs = new Set(), shareData = null, dirService = null, dirRenderer = null;
 let routeMode=false, routeIdx=null, routeDest=null, routeOrigin='base', pendingLoc=null, firstFix=true;
 let measureMode=false, measurePts=[], measureLine=null, measureDots=[]; // 📏 ruler tool state
@@ -724,14 +730,31 @@ async function init(){
     });
     homeMarker.addListener('click', ()=> measureMode ? addMeasurePoint(homeMarker.getPosition()) : showRouteToHome());   // 📏 while measuring, tapping the house measures TO the apartment
 
+    // ── Marker clustering (perf): collapse nearby place-pins into numbered bubbles so the phone
+    // only ever draws a few markers at once — smooth pan/zoom, and place-count stops mattering.
+    // If the clusterer library didn't load, useCluster stays false and we fall back to plain pins.
+    useCluster = !!(window.markerClusterer && window.markerClusterer.MarkerClusterer);
+    if(useCluster){ clusterer = new markerClusterer.MarkerClusterer({ map }); }
+
     buildList();
     wireControls();
     resolveAll();
   }catch(err){ console.error(err); showErrorOverlay(err); buildList(); }
 }
 
-function pin(color, scale){
-  return { path: google.maps.SymbolPath.CIRCLE, scale, fillColor:color, fillOpacity:1, strokeColor:'#fff', strokeWeight:2.5 };
+// A lightweight place-pin: a flat colour dot drawn ONCE to a tiny canvas and reused (cached per
+// colour) as a raster image. Raster icons render on Google's fast "optimized" path — the old
+// SVG-symbol pins forced the slow per-pin path that made pan/zoom lag with many places.
+const _pinCache = {};
+function pin(color){
+  if(_pinCache[color]) return _pinCache[color];
+  const r=8, bw=2.5, pad=2, size=Math.ceil((r+bw/2+pad)*2);
+  const cv=document.createElement('canvas'); cv.width=cv.height=size;
+  const ctx=cv.getContext('2d');
+  ctx.beginPath(); ctx.arc(size/2,size/2,r,0,2*Math.PI);
+  ctx.fillStyle=color; ctx.fill();
+  ctx.lineWidth=bw; ctx.strokeStyle='#ffffff'; ctx.stroke();
+  return _pinCache[color] = { url:cv.toDataURL(), scaledSize:new google.maps.Size(size,size), anchor:new google.maps.Point(size/2,size/2) };
 }
 // 🏠 House marker for the apartment — an inline SVG drawn right here (no image file), crisp at any zoom.
 // IMPORTANT: inside a data-URI every "#" colour MUST be written "%23", or the browser cuts the SVG off there.
@@ -769,7 +792,7 @@ async function resolveOne(idx){
     p._dist = haversine(BASE, {lat:loc.lat, lng:loc.lng});
 
     // marker
-    const m = new Marker({ map, position:{lat:loc.lat,lng:loc.lng}, title:p.name, icon:pin(CAT[p.cat].color, 8.5) });
+    const m = new Marker({ map: useCluster ? null : map, optimized:true, position:{lat:loc.lat,lng:loc.lng}, title:p.name, icon:pin(CAT[p.cat].color) });
     m.addListener('click', ()=> measureMode ? addMeasurePoint(m.getPosition()) : openDetail(idx));   // 📏 while measuring, tapping a pin drops a point ON it instead of opening it
     p._marker = m;
     applyFiltersToOne(idx);
@@ -859,10 +882,28 @@ function visible(idx){
   if(state.filters.open){ const h=HOURS[idx]; if(h==null || isOpenNow(h.periods)!==true) return false; }
   return true;
 }
-function applyFiltersToOne(idx){ const p=PLACES[idx]; if(p._marker) p._marker.setVisible(visible(idx)); }
+// Rebuild which place-pins are on the map. Clustering ON → hand the clusterer only the pins that
+// pass the current filter (it groups them into bubbles), debounced so the initial 80-pin load
+// renders once. Clustering OFF (library didn't load) → classic per-marker show/hide, as before.
+function syncMarkers(){
+  if(useCluster && clusterer){
+    clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(()=>{
+      const vis=[]; PLACES.forEach((p,idx)=>{ if(p._marker && visible(idx)) vis.push(p._marker); });
+      clusterer.clearMarkers(true); clusterer.addMarkers(vis);   // clearMarkers(true)=no redraw; addMarkers redraws once
+    }, 50);
+  } else {
+    PLACES.forEach((p,idx)=>{ if(p._marker) p._marker.setVisible(visible(idx)); });
+  }
+}
+function applyFiltersToOne(idx){
+  if(useCluster){ syncMarkers(); return; }
+  const p=PLACES[idx]; if(p._marker) p._marker.setVisible(visible(idx));
+}
 function applyFilters(){
   let n=0;
-  PLACES.forEach((p,idx)=>{ const v=visible(idx); if(els[idx]) els[idx].style.display=v?'':'none'; if(p._marker) p._marker.setVisible(v); if(v)n++; });
+  PLACES.forEach((p,idx)=>{ const v=visible(idx); if(els[idx]) els[idx].style.display=v?'':'none'; if(!useCluster && p._marker) p._marker.setVisible(v); if(v)n++; });
+  if(useCluster) syncMarkers();
   $('#countline').textContent = `${n} place${n!==1?'s':''} shown`;
 }
 // Smart filter bar: only show the toggles relevant to the current category — and clear any that get hidden.
