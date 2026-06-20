@@ -407,24 +407,16 @@ const PLACES = [
   {cat:'restaurant', name:'Aleria', query:'Aleria restaurant Megalou Alexandrou 57 Metaxourgeio Athens', area:'Metaxourgeio', vegan:'options', price:'€€€', blurb:'Upscale Modern-Greek tasting menus in an 1800s neoclassical villa, with a full dedicated vegan menu. A splurge — book ahead. Dinner only, closed Sun.'},
   {cat:'restaurant', name:'Handwich', query:'Handwich vegan Tzortz 3 Athens', area:'Exarchia', vegan:'full', blurb:'Acclaimed vegan street-food sandwiches (the famous paprika chips) — a Thessaloniki import. ~0.9 km toward Exarchia, a ~15-min walk.'},
   {cat:'restaurant', name:'Cookoomela', query:'Cookoomela Grill Themistokleous 43 Athens', area:'Exarchia', vegan:'full', blurb:'The famous vegan mushroom “gyros” — Greek street food gone fully plant-based. ~0.9 km toward Exarchia, a ~15-min walk.'},
-  {cat:'restaurant', name:'Thes', query:'Thes Greek Creative Cuisine Taki 16 Athens', area:'Psyrri', blurb:'Creative Greek cooking — reinvented moussaka, feta-cheese donuts, tuna tartare. One of central Athens’ most-loved tables; book ahead.'},
-  {cat:'restaurant', name:'MIRONI', query:'MIRONI Greek Kitchen Megalou Alexandrou 7 Athens', area:'Metaxourgeio', blurb:'Lively Greek grill — mixed grill, grilled octopus, lamb shank, fried feta with honey, often live music. Reserve on busy nights.'},
-  {cat:'restaurant', name:'Bandiera', query:'Bandiera Taki 19 Psiri Athens', area:'Psyrri', blurb:'Psyrri favourite for generous, beautifully done Greek plates and warm, owner-led service.'},
-  {cat:'restaurant', name:'Thinalos', query:'Thinalos Seafood Chiou 7 Metaxourgeio Athens', area:'Metaxourgeio', blurb:'Best-value fresh fish — grilled calamari, octopus, sea bass in a whitewashed island setting; ouzo to finish.'},
-  {cat:'restaurant', name:'Krasopoulio tou Kokkora', query:'Krasopoulio tou Kokkora Esopou 4 Psiri Athens', area:'Psyrri', blurb:'Classic Psyrri taverna with a serious Greek wine list, hearty plates and big portions at fair prices.'},
-  {cat:'restaurant', name:'Atitamos', query:'Atitamos Kapodistriou 2 Athens', area:'Omonia', blurb:'Deeply-loved local taverna (Athenians, not just tourists) — terracotta-pot moussaka, lamb fricassée, generous house wine.'},
 
   // ---- BARS ----
   {cat:'bar', name:'The Clumsies', query:'The Clumsies, Praxitelous 30, Athens', area:'Center', blurb:'Athens’ most famous bar — a perennial World’s 50 Best — flawless, inventive cocktails in a neoclassical townhouse.'},
-  {cat:'bar', name:'Line', query:'Line cocktail bar, Kolokotroni, Athens', book:'https://www.i-host.gr/Reservations/New?restaurant=589&channel=fb&lang=eng', area:'Center', blurb:'No. 8 in the World’s 50 Best Bars 2025 — sleek, zero-waste, farm-to-glass drinks by the Clumsies team.'},
+  {cat:'bar', name:'Line', query:'Line bar, Lofos Sikelias, Kato Petralona, Athens', book:'https://www.i-host.gr/Reservations/New?restaurant=589&channel=fb&lang=eng', area:'Petralona', blurb:'No. 8 in the World’s 50 Best Bars 2025 — sleek, zero-waste, farm-to-glass drinks by the Clumsies team.'},
   {cat:'bar', name:'Baba au Rum', query:'Baba au Rum, Klitiou 6, Athens', area:'Center', blurb:'400+ rums and tiki-tinged classics — a World’s 50 Best “Legend of the List”.'},
   {cat:'bar', name:'The Bar in Front of the Bar', query:'The Bar in Front of the Bar, Athens', area:'Center', wa:'+30 698 063 5896', blurb:'Tiny street-side standing bar — 8 daily cocktails made from kitchen scraps. New to World’s 50 Best 2025.'},
-  {cat:'bar', name:'Noel', query:'Noel bar, Kolokotroni 59, Athens', book:'https://www.i-host.gr/Reservations/New?restaurant=133&channel=instagram', area:'Center', blurb:'Year-round Christmas glam in a hidden arcade — theatrical decor, jazz &amp; funk, and genuinely excellent cocktails.'},
   {cat:'bar', name:'MoMix Bar', query:'MoMix Bar, Psyrri, Athens', book:'https://momixbar.com/reservation/', area:'Psyrri', blurb:'Molecular mixology — “drinks in solid form” — a fun, theatrical change of pace in the heart of Psyrri.'},
   {cat:'bar', name:'Six d.o.g.s', query:'Six d.o.g.s, Avramiotou 6-8, Athens', area:'Psyrri', blurb:'Grungy-cool multi-space — hidden garden drinks early, DJs and live music late. A Psyrri institution.'},
   {cat:'bar', name:'Boo!', query:'Boo bar, Psyrri, Athens', area:'Psyrri', tags:['view'], blurb:'Wildly atmospheric Psyrri party bar with a spiral-stair rooftop and legendary Friday nights.'},
   {cat:'bar', name:'A for Athens', query:'A for Athens rooftop bar, Monastiraki, Athens', area:'Monastiraki', tags:['view'], blurb:'The classic Monastiraki rooftop — the most dramatic head-on Acropolis view. Book ahead.'},
-  {cat:'bar', name:'360 Cocktail Bar', query:'360 Cocktail Bar, Monastiraki, Athens', book:'https://book.three-sixty.gr/360', area:'Monastiraki', tags:['view'], blurb:'Panoramic rooftop over Monastiraki Square with strong cocktails. Reserve a view table.'},
   {cat:'bar', name:'Couleur Locale', query:'Couleur Locale, Normanou 3, Monastiraki, Athens', area:'Monastiraki', tags:['view'], blurb:'Hidden boho rooftop with a stunning Parthenon view and a less touristy crowd.'},
   {cat:'bar', name:'Brettos', query:'Brettos Bar, Kidathineon 41, Plaka, Athens', area:'Plaka', blurb:'Athens’ oldest distillery (est. 1909) — a glowing wall of colored bottles, ouzo, brandy and 35+ liqueurs.'},
   {cat:'bar', name:'Heteroclito', query:'Heteroclito Wine Bar, Fokionos 2, Athens', area:'Center', blurb:'Cozy Parisian-style cave à vin — 200+ Greek labels with a natural-wine focus and great staff.'},
@@ -442,12 +434,11 @@ const PLACES = [
   // ---- BEACH / ATHENS RIVIERA (a tram or taxi ride south — 🏖️) ----
   {cat:'attraction', name:'Lake Vouliagmeni', query:'Lake Vouliagmeni, Vouliagmeni', area:'Vouliagmeni', tags:['beach','ride','view'], blurb:'Surreal warm mineral lake (22–29°C all year) ringed by cliffs — swim + a free little “fish spa”. ~30 min by taxi/tram.'},
   {cat:'attraction', name:'Vouliagmeni Beach', query:'Vouliagmeni Beach, Akti Vouliagmenis', area:'Vouliagmeni', tags:['beach','ride'], blurb:'Blue-Flag organized beach — calm, clean, sheltered water and sunbeds. The Riviera’s most relaxing swim (small entry fee).'},
-  {cat:'attraction', name:'Astir Beach', query:'Astir Beach, Vouliagmeni', area:'Vouliagmeni', tags:['beach','ride'], blurb:'The glam one — 400 m of fine sand, upscale facilities, watersports. Pricier entry, worth one splurge beach day.'},
+  {cat:'attraction', name:'Astir Beach (Four Seasons)', query:'Astir Beach, Vouliagmeni', area:'Vouliagmeni', tags:['beach','ride'], blurb:'The glam one — 400 m of fine sand, upscale facilities, watersports. Now run by the Four Seasons Astir Palace — steep entry (~€40–80), worth one splurge beach day.'},
   {cat:'attraction', name:'Glyfada Beach (Asteras)', query:'Asteras Beach, Glyfada', area:'Glyfada', tags:['beach','ride'], blurb:'Lively, sandy, younger-crowd beach with bars and food steps away — the easy, fun Riviera default. Tram from the centre.'},
   {cat:'restaurant', name:'Yi (raw vegan)', query:'Yi raw vegan, Glyfada', area:'Glyfada', vegan:'full', price:'€€', tags:['beach','ride'], blurb:'Chic raw-vegan café — Greek salad with cashew “feta”, chia bowls, carrot cake. Light, healthy seaside brunch.'},
   {cat:'bar', name:'Holy Spirit Cocktail Bar', query:'Holy Spirit Cocktail Bar, Glyfada', area:'Glyfada', tags:['beach','ride'], blurb:'Award-winning Glyfada cocktail bar — playful, well-priced drinks and a fun young crowd. A great Riviera night out.'},
   {cat:'bar', name:'Bolivar Beach Bar', query:'Bolivar Beach Bar, Alimos', book:'https://www.i-host.gr/Reservations/New?restaurant=2113&channel=website&lang=eng', area:'Alimos', tags:['beach','ride','view'], wa:'+30 697 036 7684', blurb:'Iconic palm-fringed beach club — DJ sunsets that roll into a dance floor. Closest Riviera beach bar to the centre.'},
-  {cat:'restaurant', name:'Krabo', query:'Krabo, Vouliagmeni', book:'https://krabo.gr/reservations/', area:'Vouliagmeni', price:'€€€', tags:['beach','ride','view'], blurb:'Secluded wood-and-wicker beach restaurant on the sand with Astir views — sunset dinner that becomes a cool beach club.'},
 
   // ---- SHOPS & PHARMACY (everyday needs near the apartment — 🛒) ----
   {cat:'shop', name:'Sklavenitis Supermarket', query:'Sklavenitis Supermarket, Athinas, Athens', area:'Omonia', blurb:'Big mainstream supermarket for a proper shop — ~7 min toward Omonia.'},
@@ -477,8 +468,7 @@ const PLACES = [
   {cat:'money', name:'ONExchange (currency exchange)', query:'Onexchange, Karagiorgi Servias 4, Athens', area:'Syntagma', blurb:'Trusted no-commission cash exchange at Syntagma — change physical USD → EUR notes. Long hours, 7 days. Always ask the NET euros you’ll get before handing over cash.'},
 
   // ---- QUICK BITES & COFFEE (grab-and-go near the apartment — 🍴) ----
-  {cat:'bites', name:'O Thanasis (late souvlaki)', query:'O Thanasis, Mitropoleos 69, Athens', area:'Monastiraki', blurb:'Classic kebab/souvlaki open till ~2am — reliable late-night feed, ~9 min.'},
-  {cat:'bites', name:'Elvis (late-night gyros)', query:'Elvis souvlaki, Psyrri, Athens', area:'Psyrri', blurb:'Tiny local souvlaki joint open very late — perfect post-bar, just a few min away.'},
+  {cat:'bites', name:'Elvis (late-night gyros)', query:'Elvis souvlaki, Ermou 112, Kerameikos, Athens', area:'Kerameikos', blurb:'Tiny local souvlaki joint open very late — perfect post-bar, just a few min away.'},
   {cat:'bites', name:'Taf Coffee (specialty coffee)', query:'Taf Coffee, Emmanouil Benaki 7, Athens', area:'Center', blurb:'Award-winning specialty roastery for a morning espresso or freddo — ~6 min toward Exarchia. (Replaces Dope Roasting, now closed.)'},
 ];
 
