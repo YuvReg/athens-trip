@@ -26,7 +26,7 @@
     --ink:#15293a; --muted:#5c7488; --line:#e4ecf2;
     --bg:#f4f9fc; --card:#ffffff;
     --attraction:#2d7dd2; --restaurant:#2e9e5b; --bar:#8e44ad; --home:#e8772e;
-    --shop:#8d6e4f; --transit:#0e98b0; --money:#64748b; --bites:#dc4b4b;   /* the 4 "essentials" groups, each its own pin colour */
+    --shop:#8d6e4f; --transit:#0e98b0; --money:#64748b; --bites:#dc4b4b; --cafe:#c0883a;   /* (old essentials colours, now unused) + ☕ café pin colour */
     --gold:#f2b01e; --shadow:0 6px 24px rgba(16,46,72,.12);
     --r:16px;
   }
@@ -78,6 +78,7 @@
   .chip[data-cat="attraction"][aria-pressed="true"]{background:var(--attraction)}
   .chip[data-cat="restaurant"][aria-pressed="true"]{background:var(--restaurant)}
   .chip[data-cat="bar"][aria-pressed="true"]{background:var(--bar)}
+  .chip[data-cat="cafe"][aria-pressed="true"]{background:var(--cafe)}
   .chip[data-cat="shop"][aria-pressed="true"]{background:var(--shop)}
   .chip[data-cat="transit"][aria-pressed="true"]{background:var(--transit)}
   .chip[data-cat="money"][aria-pressed="true"]{background:var(--money)}
@@ -267,22 +268,19 @@
         <input class="search" id="search" type="search" placeholder="Search places…" autocomplete="off" />
         <div class="chips" id="chips">
           <button class="chip" data-cat="all" aria-pressed="true">All</button>
-          <button class="chip" data-cat="attraction" aria-pressed="false"><span class="dot" style="background:var(--attraction)"></span>Attractions</button>
           <button class="chip" data-cat="restaurant" aria-pressed="false"><span class="dot" style="background:var(--restaurant)"></span>Eat</button>
           <button class="chip" data-cat="bar" aria-pressed="false"><span class="dot" style="background:var(--bar)"></span>Bars</button>
-          <button class="chip" data-cat="shop" aria-pressed="false"><span class="dot" style="background:var(--shop)"></span>🛒 Shops</button>
-          <button class="chip" data-cat="transit" aria-pressed="false"><span class="dot" style="background:var(--transit)"></span>🚆 Transit</button>
-          <button class="chip" data-cat="money" aria-pressed="false"><span class="dot" style="background:var(--money)"></span>🏧 Money</button>
-          <button class="chip" data-cat="bites" aria-pressed="false"><span class="dot" style="background:var(--bites)"></span>🍴 Quick bites</button>
+          <button class="chip" data-cat="cafe" aria-pressed="false"><span class="dot" style="background:var(--cafe)"></span>☕ Coffee</button>
         </div>
         <div class="toggles" id="toggles">
           <button class="toggle" data-f="fav" aria-pressed="false">⭐ Favorites</button>
           <button class="toggle" data-f="open" aria-pressed="false">🟢 Open now</button>
           <button class="toggle" data-f="vegan" data-show="restaurant" aria-pressed="false">🌱 Fully vegan</button>
           <button class="toggle" data-f="veganopt" data-show="restaurant" aria-pressed="false">🥗 Vegan options</button>
+          <button class="toggle" data-f="veg" data-show="restaurant" aria-pressed="false">🥦 Vegetarian</button>
           <button class="toggle" data-f="sport" data-show="bar" aria-pressed="false">⚽ Football</button>
-          <button class="toggle" data-f="beach" data-show="all,attraction,restaurant,bar" aria-pressed="false">🏖️ Beach</button>
-          <button class="toggle" data-f="view" data-show="all,attraction" aria-pressed="false">🌅 Great view</button>
+          <button class="toggle" data-f="beach" data-show="all,restaurant,bar,cafe" aria-pressed="false">🏖️ Beach</button>
+          <button class="toggle" data-f="view" data-show="all,restaurant,bar,cafe" aria-pressed="false">🌅 Great view</button>
           <button class="toggle" data-f="walk" aria-pressed="false">🚶 Walkable</button>
         </div>
         <button class="sharepicks" id="sharePicks" hidden>📤 Share my picks with the group</button>
@@ -372,119 +370,114 @@
    ===================================================================== */
 const BASE = { lat: 37.98028, lng: 23.72139 }; // Pl. Eleftherias 22 / Koumoundourou Sq (corrected 2026-06-19: old 37.98186,23.72361 sat ~270m NE of the actual square)
 
+
 const PLACES = [
-  // ---- ATTRACTIONS ----
-  {cat:'attraction', name:'Acropolis & Parthenon', query:'Acropolis of Athens', area:'Acropolis', tags:['must','view'], blurb:'The crowning icon of Western civilization — the 5th-c. BC Parthenon atop the sacred rock. Book a timed entry (~€30) and go early or late.'},
-  {cat:'attraction', name:'Acropolis Museum', query:'Acropolis Museum, Athens', area:'Makrygianni', blurb:'World-class modern museum showing the original Parthenon sculptures over glass-floored ancient ruins.'},
-  {cat:'attraction', name:'Ancient Agora & Temple of Hephaestus', query:'Ancient Agora of Athens, Adrianou', area:'Thissio', blurb:'Heart of ancient democracy where Socrates walked — crowned by the best-preserved Greek temple anywhere.'},
-  {cat:'attraction', name:'Roman Agora & Tower of the Winds', query:'Roman Agora of Athens', area:'Plaka', blurb:'Roman-era marketplace with the elegant octagonal Tower of the Winds — the world’s first weather station.'},
-  {cat:'attraction', name:'Hadrian’s Library', query:"Hadrian's Library, Athens", area:'Monastiraki', blurb:'Emperor Hadrian’s grand 2nd-c. AD library complex, right beside Monastiraki Square.'},
-  {cat:'attraction', name:'Monastiraki Square & Flea Market', query:'Monastiraki Square, Athens', area:'Monastiraki', blurb:'Buzzing hub of stalls, antiques and street food — with a surprise Acropolis view.'},
-  {cat:'attraction', name:'Plaka', query:'Plaka, Athens', area:'Plaka', blurb:'Athens’ oldest quarter — romantic cobbled lanes, neoclassical houses and tavernas under the Acropolis.'},
-  {cat:'attraction', name:'Anafiotika', query:'Anafiotika, Athens', area:'Plaka', tags:['view'], blurb:'A tiny Cycladic “island village” of whitewashed houses and blue doors hidden on the Acropolis slope.'},
-  {cat:'attraction', name:'Kerameikos', query:'Kerameikos Archaeological Site, Athens', area:'Kerameikos', blurb:'Tranquil, uncrowded ancient cemetery and city gates — the closest major site to your base.'},
-  {cat:'attraction', name:'Temple of Olympian Zeus & Hadrian’s Arch', query:'Temple of Olympian Zeus, Athens', area:'Center', blurb:'Colossal columns of Greece’s largest ancient temple, beside Hadrian’s triumphal marble gateway.'},
-  {cat:'attraction', name:'Syntagma & Changing of the Guard', query:'Syntagma Square, Athens', area:'Syntagma', blurb:'Athens’ civic heart — kilted Evzone guards perform their ceremony hourly at the Tomb of the Unknown Soldier.'},
-  {cat:'attraction', name:'National Garden', query:'National Garden, Athens', area:'Syntagma', blurb:'Shady royal garden with ponds, ducks and a small zoo — a cool green escape from the heat.'},
-  {cat:'attraction', name:'Areopagus Hill', query:'Areopagus Hill, Athens', area:'Acropolis', tags:['view','sunset'], blurb:'Free marble outcrop with front-row golden-hour views of the Acropolis and the city.'},
-  {cat:'attraction', name:'Philopappos Hill', query:'Filopappou Hill, Athens', area:'Thissio', tags:['view','sunset'], blurb:'Locals’ favourite sunset spot — pine-covered paths to a monument framing the perfect Acropolis view.'},
-  {cat:'attraction', name:'National Archaeological Museum', query:'National Archaeological Museum, Athens', area:'Exarchia', tags:['ride'], blurb:'Greece’s greatest museum — Mycenaean gold, the Antikythera Mechanism and unrivalled ancient art.'},
-  {cat:'attraction', name:'Panathenaic Stadium', query:'Panathenaic Stadium, Athens', area:'Pangrati', tags:['ride'], blurb:'The all-marble stadium that hosted the first modern Olympics in 1896 — you can run the track.'},
-  {cat:'attraction', name:'Stavros Niarchos Foundation', query:'Stavros Niarchos Foundation Cultural Center', area:'Kallithea', tags:['ride'], blurb:'Renzo Piano’s striking seaside park, opera house and library — rooftop views to the sea and Acropolis.'},
+  /* ===================== CENTRAL — within ~15-min walk of the apartment ===================== */
 
-  // ---- RESTAURANTS (vegan / vegan-friendly) ----
-  {cat:'restaurant', name:'Mariloulou', query:'Mariloulou, Plateon 37, Athens', area:'Metaxourgeio', vegan:'full', price:'€€', blurb:'Plant-based Greek bistro ~5 min from your door — the rebrand of the former Los Vegans. Vegan soutzoukakia, moussaka and mezze in a cozy food-and-art room.'},
-  {cat:'restaurant', name:'Veganistan', query:'Veganistan, Keramikou 101, Athens', area:'Kerameikos', vegan:'full', price:'€', blurb:'Cozy, local deli for cruelty-free salads, soups, snacks and mezze — right by the square.'},
-  {cat:'restaurant', name:'The Place', query:'The Place, Persefonis, Kerameikos, Athens', area:'Kerameikos', vegan:'options', price:'€€', wa:'+30 697 211 7800', blurb:'Leafy garden courtyards by Kerameikos metro; all-day brunch-to-cocktails with clear vegan picks.'},
-  {cat:'restaurant', name:'Kokkion', query:'Kokkion, Protogenous 2, Psyrri, Athens', area:'Psyrri', vegan:'options', price:'€', wa:'+30 698 156 3511', blurb:'Beloved Psyrri gelato shop with a rich line of 100% vegan, dairy-free sorbet flavours.'},
-  {cat:'restaurant', name:'Feyrouz', query:'Feyrouz, Karori 23, Psyrri, Athens', area:'Psyrri', vegan:'options', price:'€', blurb:'Family-run Levantine gem — vegan lahmacun (zaatar &amp; walnut), lentil soup and salads. Closed Sundays.'},
-  {cat:'restaurant', name:'Plan(e)t Ice Cream', query:'Plan(e)t Ice Cream, Ermou 86, Athens', area:'Monastiraki', vegan:'full', price:'€', blurb:'World-first plant-based, carbon-negative oat ice cream — many sugar-free scoops, on Ermou.'},
-  {cat:'restaurant', name:'Falafellas', query:'Falafellas, Aiolou 51, Athens', area:'Monastiraki', vegan:'options', price:'€', blurb:'Cult falafel wraps since 2010 — crispy, fluffy, cheap and fully vegan when you skip the yogurt.'},
+  // ---- RESTAURANTS · vegan / vegetarian (Google ≥4.4) ----
+  {cat:'restaurant', name:'Mariloulou', query:'Mariloulou, Plateon 37, Athens', area:'Metaxourgeio', vegan:'full', price:'€€', blurb:'Plant-based Greek bistro ~5 min away (the former Los Vegans) — vegan soutzoukakia, moussaka and mezze in a cozy food-and-art room.'},
+  {cat:'restaurant', name:'Veganistan', query:'Veganistan, Keramikou 101, Athens', area:'Kerameikos', vegan:'full', price:'€', blurb:'Cozy local deli for cruelty-free salads, soups, snacks and mezze — right by the square.'},
   {cat:'restaurant', name:'Rhino Vegan Beat', query:'Rhino Vegan Beat, Perikleous 56, Athens', area:'Monastiraki', vegan:'full', price:'€€', blurb:'Award-winning vegan street food — mushroom gyros, pastitsio and truffle mayo in an arcade off Ermou.'},
-  {cat:'restaurant', name:'Holy Llama', query:'Holy Llama, Nikis 23, Athens', area:'Syntagma', vegan:'full', price:'€€', blurb:'Possibly Athens’ best vegan bakery — flaky pistachio wheels, cruffins, cinnamon rolls and all-day brunch.'},
-  {cat:'restaurant', name:'Avocado', query:'Avocado Vegetarian Cafe, Nikis 30, Athens', area:'Syntagma', vegan:'options', price:'€€', blurb:'Athens’ pioneering veg café (since 2010) near the National Garden — creative, allergen-marked, most items veganizable.'},
-  {cat:'restaurant', name:'Winners Vegan', query:'Winners Vegan, Nikis 27, Athens', area:'Syntagma', vegan:'full', price:'€€€', blurb:'Refined fully-vegan dining in the Niki Athens Hotel — the “treat yourself” pick. Worth booking ahead.'},
-  {cat:'restaurant', name:'Mama Tierra', query:'Mama Tierra Acropolis, Chatzichristou 29, Athens', area:'Makrygianni', vegan:'full', price:'€€', blurb:'Iconic vegan moussaka (coconut béchamel + black beans) and multi-ethnic plates — the Acropolis branch by the Acropolis Museum. (The Akadimias one has closed.)'},
-  // ---- more restaurants added (≤1 km, Google 4.6+): vegan 🌱 + top-rated non-vegan 🍖 ----
-  {cat:'restaurant', name:'Early Bites', query:'Early Bites vegan Georgiou Stavrou 6 Athens', area:'Center', vegan:'full', blurb:'Fully-vegan bakehouse & brunch near Kotzia Square — Greek pies, falafel pita, vegan omelets, bio coffee. Daytime only.'},
-  {cat:'restaurant', name:'Avit', query:'Avit vegan restaurant Kalamiotou 8 Athens', area:'Monastiraki', vegan:'full', blurb:'100% vegan Mediterranean bistro — truffle “cheese”burger, mushroom “calamari”, tofu brunch; a hit with non-vegans too.'},
-  {cat:'restaurant', name:'Happy Blender', query:'Happy Blender Ifaistou 39 Monastiraki Athens', area:'Monastiraki', vegan:'full', blurb:'All-day 100% vegan brunch & juice bar in the Monastiraki flea market — bowls, smoothies, plant-based pizzas, raw desserts.'},
-  {cat:'restaurant', name:'Aleria', query:'Aleria restaurant Megalou Alexandrou 57 Metaxourgeio Athens', area:'Metaxourgeio', vegan:'options', price:'€€€', blurb:'Upscale Modern-Greek tasting menus in an 1800s neoclassical villa, with a full dedicated vegan menu. A splurge — book ahead. Dinner only, closed Sun.'},
-  {cat:'restaurant', name:'Handwich', query:'Handwich vegan Tzortz 3 Athens', area:'Exarchia', vegan:'full', blurb:'Acclaimed vegan street-food sandwiches (the famous paprika chips) — a Thessaloniki import. ~0.9 km toward Exarchia, a ~15-min walk.'},
-  {cat:'restaurant', name:'Cookoomela', query:'Cookoomela Grill Themistokleous 43 Athens', area:'Exarchia', vegan:'full', blurb:'The famous vegan mushroom “gyros” — Greek street food gone fully plant-based. ~0.9 km toward Exarchia, a ~15-min walk.'},
+  {cat:'restaurant', name:'Avit', query:'Avit vegan restaurant, Kalamiotou 8, Athens', area:'Monastiraki', vegan:'full', blurb:'100% vegan Mediterranean bistro — truffle “cheese”burger, mushroom “calamari”, tofu brunch; a hit with non-vegans too.'},
+  {cat:'restaurant', name:'Happy Blender', query:'Happy Blender, Ifaistou 39, Monastiraki, Athens', area:'Monastiraki', vegan:'full', blurb:'All-day 100% vegan brunch & juice bar in the flea market — bowls, smoothies, plant pizzas, raw desserts.'},
+  {cat:'restaurant', name:'Mama Tierra', query:'Mama Tierra Acropolis, Chatzichristou 29, Athens', area:'Makrygianni', vegan:'full', price:'€€', blurb:'Iconic vegan moussaka (coconut béchamel + black beans) and multi-ethnic plates, by the Acropolis Museum.'},
+  {cat:'restaurant', name:'Winners Vegan', query:'Winners Vegan, Nikis 27, Athens', area:'Syntagma', vegan:'full', price:'€€€', blurb:'Refined fully-vegan dining in the Niki Athens Hotel — the “treat yourself” pick. Book ahead.'},
+  {cat:'restaurant', name:'Early Bites', query:'Early Bites vegan, Georgiou Stavrou 6, Athens', area:'Center', vegan:'full', blurb:'Fully-vegan bakehouse & brunch near Kotzia Square — Greek pies, falafel pita, vegan omelets, bio coffee. Daytime only.'},
+  {cat:'restaurant', name:'Handwich', query:'Handwich vegan, Tzortz 3, Athens', area:'Exarchia', vegan:'full', blurb:'Acclaimed vegan street-food sandwiches (the famous paprika chips) — a Thessaloniki import. ~15-min walk.'},
+  {cat:'restaurant', name:'Cookoomela', query:'Cookoomela Grill, Themistokleous 43, Exarchia, Athens', area:'Exarchia', vegan:'full', blurb:'The famous vegan mushroom “gyros” — Greek street food gone fully plant-based. ~15-min walk.'},
+  {cat:'restaurant', name:'Bamboo Vegan', query:'Bamboo Vegan, Zoodochou Pigis 36, Exarchia, Athens', area:'Exarchia', vegan:'full', blurb:'Build-your-own vegan sandwiches, savoury pies and deli plates; rotating homemade menu. ~15-min walk.'},
+  {cat:'restaurant', name:'Veganaki', query:'Veganaki, Athanasiou Diakou 38, Athens', area:'Makrygianni', vegan:'full', blurb:'All-day vegan + gluten-free — falafel, vegan moussaka/pastitsio and souvlaki near the Acropolis Museum.'},
+  {cat:'restaurant', name:'Peas', query:'Peas vegan, Falirou 40, Koukaki, Athens', area:'Koukaki', vegan:'full', blurb:'“Give peas a chance” — vegan souvlaki with tempeh, jackfruit burger, tofu nuggets. ~15-min walk.'},
+  {cat:'restaurant', name:'Mother Vegan', query:'Mother Vegan Cafe Bistro, Dimitrakopoulou 95, Koukaki, Athens', area:'Koukaki', vegan:'full', blurb:'Artful organic vegan bistro — vegan choc-croissant brunch plus dinner pies and burgers. ~15-min walk.'},
+  {cat:'restaurant', name:'The Place', query:'The Place, Persefonis, Kerameikos, Athens', area:'Kerameikos', vegan:'options', price:'€€', wa:'+30 697 211 7800', blurb:'Leafy garden courtyards by Kerameikos metro; all-day brunch-to-cocktails with clear vegan picks.'},
+  {cat:'restaurant', name:'Feyrouz', query:'Feyrouz, Karori 23, Psyrri, Athens', area:'Psyrri', vegan:'options', price:'€', blurb:'Family-run Levantine gem — vegan lahmacun (zaatar & walnut), lentil soup and salads. Closed Sundays.'},
+  {cat:'restaurant', name:'Falafellas', query:'Falafellas, Aiolou 51, Athens', area:'Monastiraki', vegan:'options', price:'€', blurb:'Cult falafel wraps since 2010 — crispy, fluffy, cheap and fully vegan when you skip the yogurt.'},
+  {cat:'restaurant', name:'Aleria', query:'Aleria restaurant, Megalou Alexandrou 57, Metaxourgeio, Athens', area:'Metaxourgeio', vegan:'options', price:'€€€', blurb:'Upscale Modern-Greek tasting menus in an 1800s villa, with a full dedicated vegan menu. Dinner only, closed Sun.'},
+  {cat:'restaurant', name:'Nice n Easy', query:'Nice n Easy, Omirou 60, Athens', area:'Syntagma', vegan:'options', price:'€€', blurb:'All-day organic bistro with clearly-labeled vegan + gluten-free dishes alongside the omnivore menu.'},
+  {cat:'restaurant', name:'Avocado', query:'Avocado Vegetarian Cafe, Nikis 30, Athens', area:'Syntagma', vegan:'veg', price:'€€', blurb:'Athens’ pioneering veg café (since 2010) near the National Garden — creative, allergen-marked, most items veganizable.'},
 
-  // ---- BARS ----
+  // ---- RESTAURANTS · meat / seafood / everything (Google ≥4.4) ----
+  {cat:'restaurant', name:'Thes', query:'Thes Greek Creative Cuisine, Taki 16, Psyrri, Athens', area:'Psyrri', price:'€€', blurb:'Creative modern Greek — reinvented moussaka, feta-cheese donuts, tuna tartare. A TripAdvisor “Best of the Best”; book ahead.'},
+  {cat:'restaurant', name:'Ta Karamanlidika tou Fani', query:'Ta Karamanlidika tou Fani, Sokratous 1, Athens', area:'Omonia', book:'https://www.karamanlidika.gr/', price:'€€', blurb:'Deli-meze institution — pastourma, cured meats and cheeses with free little appetizers. Booking recommended.'},
+  {cat:'restaurant', name:'Oineas', query:'Oineas Restaurant, Aisopou 9, Psyrri, Athens', area:'Psyrri', book:'https://www.e-restaurants.gr/en/estiatorio/oineas-psirri', price:'€€', blurb:'Classic taverna with vintage decor and a car-free terrace — pork with honey & thyme, lamb with orzo.'},
+  {cat:'restaurant', name:'Kanella', query:'Kanella, Leoforos Konstantinoupoleos 70, Gazi, Athens', area:'Gazi', price:'€€', blurb:'Honest homemade Greek on a daily handwritten menu — fava, meatballs, slow-cooked lamb. Buzzy Gazi favourite.'},
+  {cat:'restaurant', name:'Lithos Tavern', query:'Lithos Tavern, Esopou 17, Psyrri, Athens', area:'Psyrri', price:'€€', blurb:'Warm Psyrri taverna mixing classic and modern Greek plates, meat and seafood; generous and well-priced.'},
+  {cat:'restaurant', name:'CTC Urban Gastronomy', query:'CTC Urban Gastronomy, Pireos 72, Kerameikos, Athens', area:'Kerameikos', price:'€€€€', blurb:'One-Michelin-star creative tasting menus in a stripped-back Kerameikos space — a special-occasion splurge.'},
+  {cat:'restaurant', name:'Atlantikos', query:'Atlantikos, Avliton 7, Psyrri, Athens', area:'Psyrri', price:'€€', blurb:'Tiny, buzzy fish & seafood joint in Psyrri — the daily catch grilled simply; arrive early or queue.'},
+  {cat:'restaurant', name:'Diporto', query:'Diporto Agoras, Sokratous 9, Athens', area:'Omonia', price:'€', blurb:'Legendary cellar taverna in the Central Market — no sign, no menu, just chickpeas, fish and barrel wine.'},
+  {cat:'restaurant', name:'Klimataria', query:'Klimataria, Plateia Theatrou 2, Athens', area:'Center', price:'€€', blurb:'Old-school taverna with live rebetiko some nights — hearty Greek classics and house wine.'},
+  {cat:'restaurant', name:'Seychelles', query:'Seychelles, Keramikou 49, Metaxourgeio, Athens', area:'Metaxourgeio', price:'€€', blurb:'Market-driven modern taverna ~5 min away — short daily menu, great cooking, fair prices. Gets packed.'},
+  {cat:'restaurant', name:'O Kostas', query:'O Kostas souvlaki, Pentelis 5, Athens', area:'Syntagma', price:'€', blurb:'Tiny 1950s souvlaki counter — pork skewers and the famous spicy-tomato pita. Lunchtime only; worth the wait.'},
+  {cat:'restaurant', name:'Strofi', query:'Strofi Athenian Restaurant, Rovertou Galli 25, Athens', area:'Makrygianni', book:'https://strofi.gr/', price:'€€€', tags:['view'], blurb:'Refined Greek classics with a rooftop Acropolis view — lamb, moussaka; book the terrace at sunset.'},
+  {cat:'restaurant', name:'Tzitzikas kai Mermigas', query:'Tzitzikas kai Mermigas, Mitropoleos 12-14, Athens', area:'Syntagma', price:'€€', blurb:'Popular modern mezedopolio — inventive small plates (honey-cheese balls) in a grocery-store setting.'},
+  {cat:'restaurant', name:'Avli', query:'Avli, Agiou Dimitriou 12, Psyrri, Athens', area:'Psyrri', price:'€', blurb:'Hidden courtyard taverna off a Psyrri arcade — cheap, cheerful meze and grills, lively at night.'},
+  {cat:'restaurant', name:'Birdman', query:'Birdman, Skoufou 2, Syntagma, Athens', area:'Syntagma', price:'€€€', blurb:'Japanese yakitori & robata grill — skewers over binchotan charcoal and a sake list. Sleek and small; book ahead.'},
+
+  // ---- BARS (Google ≥4.4) ----
   {cat:'bar', name:'The Clumsies', query:'The Clumsies, Praxitelous 30, Athens', area:'Center', blurb:'Athens’ most famous bar — a perennial World’s 50 Best — flawless, inventive cocktails in a neoclassical townhouse.'},
   {cat:'bar', name:'Line', query:'Line bar, Lofos Sikelias, Kato Petralona, Athens', book:'https://www.i-host.gr/Reservations/New?restaurant=589&channel=fb&lang=eng', area:'Petralona', blurb:'No. 8 in the World’s 50 Best Bars 2025 — sleek, zero-waste, farm-to-glass drinks by the Clumsies team.'},
   {cat:'bar', name:'Baba au Rum', query:'Baba au Rum, Klitiou 6, Athens', area:'Center', blurb:'400+ rums and tiki-tinged classics — a World’s 50 Best “Legend of the List”.'},
-  {cat:'bar', name:'The Bar in Front of the Bar', query:'The Bar in Front of the Bar, Athens', area:'Center', wa:'+30 698 063 5896', blurb:'Tiny street-side standing bar — 8 daily cocktails made from kitchen scraps. New to World’s 50 Best 2025.'},
-  {cat:'bar', name:'MoMix Bar', query:'MoMix Bar, Psyrri, Athens', book:'https://momixbar.com/reservation/', area:'Psyrri', blurb:'Molecular mixology — “drinks in solid form” — a fun, theatrical change of pace in the heart of Psyrri.'},
-  {cat:'bar', name:'Six d.o.g.s', query:'Six d.o.g.s, Avramiotou 6-8, Athens', area:'Psyrri', blurb:'Grungy-cool multi-space — hidden garden drinks early, DJs and live music late. A Psyrri institution.'},
-  {cat:'bar', name:'Boo!', query:'Boo bar, Psyrri, Athens', area:'Psyrri', tags:['view'], blurb:'Wildly atmospheric Psyrri party bar with a spiral-stair rooftop and legendary Friday nights.'},
-  {cat:'bar', name:'A for Athens', query:'A for Athens rooftop bar, Monastiraki, Athens', area:'Monastiraki', tags:['view'], blurb:'The classic Monastiraki rooftop — the most dramatic head-on Acropolis view. Book ahead.'},
-  {cat:'bar', name:'Couleur Locale', query:'Couleur Locale, Normanou 3, Monastiraki, Athens', area:'Monastiraki', tags:['view'], blurb:'Hidden boho rooftop with a stunning Parthenon view and a less touristy crowd.'},
-  {cat:'bar', name:'Brettos', query:'Brettos Bar, Kidathineon 41, Plaka, Athens', area:'Plaka', blurb:'Athens’ oldest distillery (est. 1909) — a glowing wall of colored bottles, ouzo, brandy and 35+ liqueurs.'},
+  {cat:'bar', name:'The Bar in Front of the Bar', query:'The Bar in Front of the Bar, Athens', area:'Center', wa:'+30 698 063 5896', blurb:'Tiny street-side standing bar — 8 daily cocktails made from kitchen scraps. World’s 50 Best.'},
+  {cat:'bar', name:'The 7 Jokers', query:'The 7 Jokers, Voulis 7, Athens', area:'Center', blurb:'Beloved all-day bartender’s bar — rare spirits, rock’n’roll soul, open late.'},
+  {cat:'bar', name:'Juan Rodriguez', query:'Juan Rodriguez Bar, Mikonos 5, Psyrri, Athens', area:'Psyrri', blurb:'High-energy rum & Latin cocktail bar in Psyrri — expert daiquiris, packed and fun.'},
+  {cat:'bar', name:'Oinoscent', query:'Oinoscent, Voulis 45-47, Athens', area:'Center', blurb:'Sommelier-led wine bar — a deep Greek + natural list by the glass; relaxed and knowledgeable.'},
   {cat:'bar', name:'Heteroclito', query:'Heteroclito Wine Bar, Fokionos 2, Athens', area:'Center', blurb:'Cozy Parisian-style cave à vin — 200+ Greek labels with a natural-wine focus and great staff.'},
-  // ---- more bars added (≤1 km, Google 4.6+) ----
-  {cat:'bar', name:'Cinque Wine & Deli', query:'Cinque Wine Deli Agatharchou 15 Psyrri Athens', area:'Psyrri', blurb:'Family-run Greek wine bar with guided flights + charcuterie and cheese (vegan options too) — one of the city’s best-rated. Reserves.'},
-  {cat:'bar', name:'BackdooR', query:'BackdooR bar Sarri 39 Athens', area:'Psyrri', blurb:'Intimate cocktail speakeasy on Psyrri’s bar street — open Wed–Sun evenings only, so it stays personal.'},
-  {cat:'bar', name:'Old Fashioned', query:'Old Fashioned bar Miaouli 16 Psyrri Athens', area:'Psyrri', blurb:'Tiny hole-in-the-wall with a long, affordable classic-cocktail list — a great first stop on a Psyrri crawl.'},
-  {cat:'bar', name:'Bad Tooth', query:'Bad Tooth bar Kakourgodikiou 6 Athens', area:'Psyrri', blurb:'Cool, characterful Psyrri spot open till 3am — cheap, well-made drinks and a genuine local late-night crowd.'},
+  {cat:'bar', name:'Cinque Wine & Deli', query:'Cinque Wine Deli, Agatharchou 15, Psyrri, Athens', area:'Psyrri', blurb:'Family-run Greek wine bar with guided flights, charcuterie and cheese (vegan options too). Reserves.'},
+  {cat:'bar', name:'MoMix Bar', query:'MoMix Bar, Keramikou 58, Kerameikos, Athens', book:'https://momixbar.com/reservation/', area:'Kerameikos', blurb:'Molecular mixology — “drinks in solid form” — a fun, theatrical change of pace.'},
+  {cat:'bar', name:'Six d.o.g.s', query:'Six d.o.g.s, Avramiotou 6-8, Athens', area:'Psyrri', blurb:'Grungy-cool multi-space — hidden garden drinks early, DJs and live music late. A Psyrri institution.'},
+  {cat:'bar', name:'BackdooR', query:'BackdooR bar, Sarri 39, Athens', area:'Psyrri', blurb:'Intimate cocktail speakeasy on Psyrri’s bar street — Wed–Sun evenings only, so it stays personal.'},
+  {cat:'bar', name:'Old Fashioned', query:'Old Fashioned bar, Miaouli 16, Psyrri, Athens', area:'Psyrri', blurb:'Tiny hole-in-the-wall with a long, affordable classic-cocktail list — a great first Psyrri stop.'},
+  {cat:'bar', name:'Bad Tooth', query:'Bad Tooth bar, Kakourgodikiou 6, Athens', area:'Psyrri', blurb:'Cool, characterful Psyrri spot open till 3am — cheap, well-made drinks and a real late-night crowd.'},
+  {cat:'bar', name:'Couleur Locale', query:'Couleur Locale, Normanou 3, Monastiraki, Athens', area:'Monastiraki', tags:['view'], blurb:'Hidden boho rooftop with a stunning Parthenon view and a less touristy crowd.'},
+  {cat:'bar', name:'A for Athens', query:'A for Athens rooftop bar, Miaouli 2-4, Monastiraki, Athens', area:'Monastiraki', tags:['view'], blurb:'The classic Monastiraki rooftop — the most dramatic head-on Acropolis view. Book ahead.'},
+  {cat:'bar', name:'Brettos', query:'Brettos Bar, Kidathineon 41, Plaka, Athens', area:'Plaka', blurb:'Athens’ oldest distillery (est. 1909) — a glowing wall of colored bottles, ouzo, brandy and 35+ liqueurs.'},
+  // sports bars (live football — handy for the World Cup ⚽)
+  {cat:'bar', name:'Athens Sports Bar', query:'Athens Sports Bar, Veikou 3a, Makrygianni, Athens', area:'Makrygianni', tags:['sport'], blurb:'Athens’ dedicated sports bar — 8 big HD screens with all the football, craft beer + bar food. ~15-min walk.'},
+  {cat:'bar', name:'James Joyce Irish Pub', query:'The James Joyce Irish Pub, Astiggos 12, Monastiraki, Athens', area:'Monastiraki', tags:['sport'], blurb:'Lively Monastiraki Irish pub — screens locked on the match, Guinness on tap, proper pub grub.'},
+  {cat:'bar', name:'The Lucky Sparrow', query:'The Lucky Sparrow Pub, Persefonis 20, Kerameikos, Athens', area:'Kerameikos', tags:['sport'], wa:'+30 697 502 6836', blurb:'Craft-beer & rock pub by Kerameikos metro that beams the big matches — late hours suit evening kickoffs.'},
 
-  // ---- SPORTS BARS (verified to show live football — great for the World Cup ⚽) ----
-  {cat:'bar', name:'Athens Sports Bar', query:'Athens Sports Bar, Athens', area:'Makrygianni', tags:['sport'], blurb:'Athens’ dedicated sports bar — 8 big HD screens showing all the football incl. the World Cup, craft beer + bar food. ~15 min walk.'},
-  {cat:'bar', name:'James Joyce Irish Pub', query:'The James Joyce Irish Pub, Athens', area:'Monastiraki', tags:['sport'], blurb:'Lively Monastiraki Irish pub — 3 screens locked on the match, Guinness on tap, proper pub grub. Fills up on big games.'},
-  {cat:'bar', name:'The Lucky Sparrow', query:'The Lucky Sparrow Pub, Kerameikos, Athens', area:'Kerameikos', tags:['sport'], wa:'+30 697 502 6836', blurb:'Craft-beer & rock pub by Kerameikos metro (4.8★) that beams the big matches — late hours suit the World Cup’s evening kickoffs.'},
+  // ---- COFFEE / CAFÉS / DESSERT (Google ≥4.4) ----
+  {cat:'cafe', name:'Taf Coffee', query:'Taf Coffee, Emmanouil Benaki 7, Athens', area:'Center', blurb:'Award-winning specialty roastery for a morning espresso or freddo — ~6 min toward Exarchia.'},
+  {cat:'cafe', name:'Mokka', query:'Mokka Specialty Coffee, Athinas 44, Athens', area:'Omonia', blurb:'Old-school roastery (since 1922) by the Central Market — strong Greek coffee and traditional sweets.'},
+  {cat:'cafe', name:'Samba Coffee Roasters', query:'Samba Coffee Roasters The Shop, Athens', area:'Kolonaki', blurb:'Family roaster (since 1979) with a polished flagship — consistently top-rated coffee. ~15-min walk.'},
+  {cat:'cafe', name:'Tailor Made', query:'Tailor Made Coffee Roasters, Agias Eirinis Square, Athens', area:'Monastiraki', blurb:'Buzzy micro-roastery on lively Agia Irini square — specialty coffee by day, cocktails by night.'},
+  {cat:'cafe', name:'Picky Brunch', query:'Picky Brunch & Specialty Coffee, Psyrri, Athens', area:'Psyrri', blurb:'Brunch-with-precision-coffee a step from home — eggs Benedict, tiramisu pancakes.'},
+  {cat:'cafe', name:'Stone Athens', query:'Stone Athens, Monastiraki, Athens', area:'Monastiraki', tags:['view'], blurb:'Healthy brunch and Med plates with an Acropolis-view terrace.'},
+  {cat:'cafe', name:'Kaya', query:'Kaya, Stoa Bolani, Voulis, Athens', area:'Syntagma', blurb:'Tiny arcade espresso bar near Syntagma — great-value, high-quality specialty coffee.'},
+  {cat:'cafe', name:'Zampano', query:'Zampano, Plateon 6, Psyrri, Athens', area:'Psyrri', blurb:'Retro-elegant all-day café — warm lighting, jazz on vinyl; coffee that slides into cocktails.'},
+  {cat:'cafe', name:'Kimolia Art Cafe', query:'Kimolia Art Cafe, Iperidou 5, Plaka, Athens', area:'Plaka', blurb:'Cosy chalkboard-art café in Plaka — coffee, brunch and homemade cake.'},
+  {cat:'cafe', name:'Klepsydra', query:'Klepsydra Cafe, Thrasivoulou 9, Plaka, Athens', area:'Plaka', blurb:'Hidden, time-slows-down terrace on a picturesque Plaka stairway with Agora views.'},
+  {cat:'cafe', name:'Little Tree Books & Coffee', query:'Little Tree Books & Coffee, Kavalloti 2, Koukaki, Athens', area:'Koukaki', blurb:'Beloved bookshop-café near the Acropolis Museum — coffee, brunch, calm. ~15-min walk.'},
+  {cat:'cafe', name:'Takis Bakery', query:'Takis Bakery, Misaraliotou 14, Koukaki, Athens', area:'Koukaki', blurb:'Three-generation bakery (since 1961) — 30+ breads, top tiropita and spanakopita. ~15-min walk.'},
+  {cat:'cafe', name:'Lukumades', query:'Lukumades, Agias Eirinis Square, Athens', area:'Monastiraki', blurb:'Modern loukoumades (Greek honey donuts) — pistachio, chocolate; open late.'},
+  {cat:'cafe', name:'Le Greche', query:'Le Greche, Mitropoleos 16, Athens', area:'Syntagma', blurb:'Athens’ benchmark gelato — pistachio is the signature; gluten-free options.'},
+  {cat:'cafe', name:'Kokkion', query:'Kokkion, Protogenous 2, Psyrri, Athens', area:'Psyrri', wa:'+30 698 156 3511', blurb:'Cult small-batch ice cream by the Central Market — rich dairy and vegan sorbet flavours.'},
+  {cat:'cafe', name:'Plan(e)t Ice Cream', query:'Plan(e)t Ice Cream, Ermou 86, Athens', area:'Monastiraki', vegan:'full', blurb:'World-first plant-based, carbon-negative oat ice cream — many sugar-free scoops, on Ermou.'},
+  {cat:'cafe', name:'Holy Llama', query:'Holy Llama, Nikis 23, Athens', area:'Syntagma', vegan:'full', blurb:'Possibly Athens’ best vegan bakery — flaky pistachio wheels, cruffins, cinnamon rolls and all-day brunch.'},
+  {cat:'cafe', name:'Solo Gelato', query:'Solo Gelato, Plaka, Athens', area:'Plaka', blurb:'Well-rated gelateria near the Acropolis — classic and Greek-twist flavours.'},
+  {cat:'cafe', name:'DaVinci Gelato', query:'Lartecono DaVinci Gelato, Plaka, Athens', area:'Plaka', blurb:'Local-twist gelato (kataifi, mastiha) with vibrant cones; central branches.'},
+  {cat:'cafe', name:'Stani', query:'Stani, Marikas Kotopouli 10, Athens', area:'Omonia', blurb:'1931 dairy shop — thick Greek yogurt with honey, rice pudding and galaktoboureko.'},
 
-  // ---- BEACH / ATHENS RIVIERA (a tram or taxi ride south — 🏖️) ----
-  {cat:'attraction', name:'Lake Vouliagmeni', query:'Lake Vouliagmeni, Vouliagmeni', area:'Vouliagmeni', tags:['beach','ride','view'], blurb:'Surreal warm mineral lake (22–29°C all year) ringed by cliffs — swim + a free little “fish spa”. ~30 min by taxi/tram.'},
-  {cat:'attraction', name:'Vouliagmeni Beach', query:'Vouliagmeni Beach, Akti Vouliagmenis', area:'Vouliagmeni', tags:['beach','ride'], blurb:'Blue-Flag organized beach — calm, clean, sheltered water and sunbeds. The Riviera’s most relaxing swim (small entry fee).'},
-  {cat:'attraction', name:'Astir Beach (Four Seasons)', query:'Astir Beach, Vouliagmeni', area:'Vouliagmeni', tags:['beach','ride'], blurb:'The glam one — 400 m of fine sand, upscale facilities, watersports. Now run by the Four Seasons Astir Palace — steep entry (~€40–80), worth one splurge beach day.'},
-  {cat:'attraction', name:'Glyfada Beach (Asteras)', query:'Asteras Beach, Glyfada', area:'Glyfada', tags:['beach','ride'], blurb:'Lively, sandy, younger-crowd beach with bars and food steps away — the easy, fun Riviera default. Tram from the centre.'},
-  {cat:'restaurant', name:'Yi (raw vegan)', query:'Yi raw vegan, Glyfada', area:'Glyfada', vegan:'full', price:'€€', tags:['beach','ride'], blurb:'Chic raw-vegan café — Greek salad with cashew “feta”, chia bowls, carrot cake. Light, healthy seaside brunch.'},
-  {cat:'bar', name:'Holy Spirit Cocktail Bar', query:'Holy Spirit Cocktail Bar, Glyfada', area:'Glyfada', tags:['beach','ride'], blurb:'Award-winning Glyfada cocktail bar — playful, well-priced drinks and a fun young crowd. A great Riviera night out.'},
+  /* ===================== ATHENS RIVIERA — the coast (tram / taxi ride south, 🏖️) ===================== */
+  {cat:'restaurant', name:'AVIT', query:'AVIT vegan, Glyfada, Athens', area:'Glyfada', vegan:'full', tags:['beach','ride'], blurb:'Beloved all-vegan Glyfada spot — standout vegan souvlaki, burgers and plant cheeses. The Riviera vegan anchor.'},
+  {cat:'restaurant', name:'LYFE in a bowl', query:'LYFE in a bowl, Glyfada, Athens', area:'Glyfada', vegan:'options', tags:['beach','ride'], blurb:'Modern bowls, smoothies and healthy plant-forward breakfasts near the Riviera.'},
+  {cat:'restaurant', name:'Yi (raw vegan)', query:'Yi raw vegan, Glyfada', area:'Glyfada', vegan:'full', tags:['beach','ride'], blurb:'Chic raw-vegan café — Greek salad with cashew “feta”, chia bowls, carrot cake.'},
+  {cat:'restaurant', name:'Moorings', query:'Moorings, Astir Marina, Vouliagmeni', area:'Vouliagmeni', book:'https://www.moorings.gr/', tags:['beach','ride','view'], blurb:'Glam all-day sea-view restaurant in Astir Marina — Mediterranean, seafood and cocktails.'},
+  {cat:'restaurant', name:'Barbounaki', query:'Barbounaki, Glyfada, Athens', area:'Glyfada', tags:['beach','ride'], blurb:'Fresh-fish taverna — red mullet (barbouni) is the signature; lively and well-priced.'},
+  {cat:'restaurant', name:'Sardelaki', query:'Sardelaki, Glyfada, Athens', area:'Glyfada', tags:['beach','ride'], blurb:'Buzzy, well-priced fish taverna — fried sardines and meze by the sea.'},
+  {cat:'restaurant', name:'Ithaki', query:'Ithaki, Vouliagmeni, Athens', area:'Vouliagmeni', tags:['beach','ride','view'], blurb:'Chic seafood over Vouliagmeni bay — wagyu and lobster, sunset views. A splurge.'},
+  {cat:'restaurant', name:'Taverna 37', query:'Taverna 37, Four Seasons Astir Palace, Vouliagmeni', area:'Vouliagmeni', tags:['beach','ride','view'], blurb:'Upscale seaside Greek taverna at the Four Seasons Astir Palace.'},
+  {cat:'bar', name:'Holy Spirit Cocktail Bar', query:'Holy Spirit Cocktail Bar, Glyfada', area:'Glyfada', tags:['beach','ride'], blurb:'Award-winning Glyfada cocktail bar — playful, well-priced drinks and a fun young crowd.'},
   {cat:'bar', name:'Bolivar Beach Bar', query:'Bolivar Beach Bar, Alimos', book:'https://www.i-host.gr/Reservations/New?restaurant=2113&channel=website&lang=eng', area:'Alimos', tags:['beach','ride','view'], wa:'+30 697 036 7684', blurb:'Iconic palm-fringed beach club — DJ sunsets that roll into a dance floor. Closest Riviera beach bar to the centre.'},
-
-  // ---- SHOPS & PHARMACY (everyday needs near the apartment — 🛒) ----
-  {cat:'shop', name:'Sklavenitis Supermarket', query:'Sklavenitis Supermarket, Athinas, Athens', area:'Omonia', blurb:'Big mainstream supermarket for a proper shop — ~7 min toward Omonia.'},
-  {cat:'shop', name:'Varvakios Central Market', query:'Varvakios Agora, Athens', area:'Omonia', blurb:'Athens’ historic food market — fresh produce, fish, cheese, olives. A sight in itself, ~6 min.'},
-  {cat:'shop', name:'Pharmacy (nearest)', query:'Pharmacy, Plateia Eleftherias, Athens', area:'Koumoundourou Sq', blurb:'Closest pharmacy. At night, pharmacies rotate duty — dial 11888 or check vrisko.gr for the one open now.'},
-  // ---- more shops/pharmacies added (≤1 km, useful best-of — no rating bar) ----
-  {cat:'shop', name:'My Market (Omonia)', query:'My Market Omonia Patision 7 Athens', area:'Omonia', blurb:'Big full supermarket right at Omonia — the closest proper grocery run on the Omonia side.'},
-  {cat:'shop', name:'My Market (Metaxourgeio)', query:'My Market Metaxourgeio Plataion 51 Athens', area:'Metaxourgeio', blurb:'Handy supermarket on the west side, toward Gazi/Kerameikos.'},
-  {cat:'shop', name:'AB Vassilopoulos (Monastiraki)', query:'AB Vassilopoulos Mitropoleos 72 Monastiraki Athens', area:'Monastiraki', blurb:'Greece’s nicest mainstream supermarket chain, toward Monastiraki/Syntagma. Closed Sundays.'},
-  {cat:'shop', name:'My Market (Pl. Vathis)', query:'My Market Plateia Vathis Psaron 39 Athens', area:'Pl. Vathis', blurb:'A second close My Market to the north (Plateia Vathis) — handy backup if another branch is shut.'},
-  {cat:'shop', name:'Hondos Center (Omonia)', query:'Hondos Center Omonia Plateia Omonias 4 Athens', area:'Omonia', blurb:'Greece’s big cosmetics, toiletries & variety store — the closest non-grocery essentials shop.'},
-  {cat:'shop', name:'Ermou shopping street', query:'Ermou Street Monastiraki Athens', area:'Monastiraki', blurb:'Athens’ main pedestrian high-street — Zara, Mango, Sephora and more in one walkable stretch.'},
-  {cat:'shop', name:'Attica Department Store', query:'Attica The Department Store City Link Panepistimiou 9 Athens', area:'Center', blurb:'Greece’s big upscale department store — 8 floors of fashion & beauty, tax-free for non-EU. Right at the 1 km edge.'},
-  {cat:'shop', name:'Bakakos Pharmacy (Omonia)', query:'Bacacos Pharmacy, Agiou Konstantinou 3, Omonia, Athens', area:'Omonia', blurb:'Athens’ biggest, most famous pharmacy — broad stock, English spoken. (No Athens pharmacy is open 24h — they rotate night duty; dial 1434 or check vrisko.gr for tonight’s open one.)'},
-  {cat:'shop', name:'Bartzis Pharmacy (Athinas)', query:'Bartzis Pharmacy, Athinas 36, Athens', area:'Monastiraki', blurb:'Closest pharmacy on your daily Athinas-St walk, by the Central Market and Monastiraki metro.'},
-  {cat:'shop', name:'Lambrou Pharmacy (Aiolou)', query:'Lambrou Pharmacy, Aiolou 50, Athens', area:'Center', blurb:'Pharmacy on the pedestrian Aiolou shopping street, toward Monastiraki.'},
-  {cat:'shop', name:'Lolas Pharmacy (Metropoleos)', query:'Lolas Pharmacy, Metropoleos 54, Athens', area:'Center', blurb:'Pharmacy toward Syntagma and the Cathedral — handy at that end of town.'},
-
-  // ---- TRANSIT (your metros + the 24h airport bus — 🚆) ----
-  {cat:'transit', name:'Metaxourgeio Metro (Line 2)', query:'Metaxourgeio Metro Station', area:'Metaxourgeio', blurb:'Your closest metro (~7 min) — Red Line 2 across the city.'},
-  {cat:'transit', name:'Monastiraki Metro (Lines 1 & 3)', query:'Monastiraki Metro Station', area:'Monastiraki', blurb:'~9 min — Blue Line 3 runs direct to the airport; Green Line 1 to Piraeus port.'},
-  {cat:'transit', name:'Omonia Metro (Lines 1 & 2)', query:'Omonia Metro Station', area:'Omonia', blurb:'Central hub ~7 min — Green Line 1 + Red Line 2 interchange.'},
-  {cat:'transit', name:'Airport Bus X95 (Syntagma)', query:'X95 Airport Express Bus, Syntagma Square, Athens', area:'Syntagma', blurb:'Airport Express X95 — runs 24/7, flat €5.50, ~40–90 min to/from the airport. Catch it on the south side of Syntagma Sq (Othonos St, by the CHUNXI restaurant); buy the ticket at the kiosk.'},
-
-  // ---- MONEY (banks, ATMs + currency exchange — 🏧) ----
-  {cat:'money', name:'ATM — National Bank', query:'National Bank of Greece, Omonia, Athens', area:'Omonia', blurb:'Bank ATM in the centre — lower fees than the random street “Euronet” machines. For euros off your card, a bank ATM like this beats the cash-exchange desks.'},
-  {cat:'money', name:'ONExchange (currency exchange)', query:'Onexchange, Karagiorgi Servias 4, Athens', area:'Syntagma', blurb:'Trusted no-commission cash exchange at Syntagma — change physical USD → EUR notes. Long hours, 7 days. Always ask the NET euros you’ll get before handing over cash.'},
-
-  // ---- QUICK BITES & COFFEE (grab-and-go near the apartment — 🍴) ----
-  {cat:'bites', name:'Elvis (late-night gyros)', query:'Elvis souvlaki, Ermou 112, Kerameikos, Athens', area:'Kerameikos', blurb:'Tiny local souvlaki joint open very late — perfect post-bar, just a few min away.'},
-  {cat:'bites', name:'Taf Coffee (specialty coffee)', query:'Taf Coffee, Emmanouil Benaki 7, Athens', area:'Center', blurb:'Award-winning specialty roastery for a morning espresso or freddo — ~6 min toward Exarchia. (Replaces Dope Roasting, now closed.)'},
+  {cat:'bar', name:'Island Club', query:'Island Club Restaurant, Varkiza coast, Athens', area:'Vouliagmeni', tags:['beach','ride','view'], blurb:'30-year seaside club-restaurant — mixologist cocktails and dancing into the night.'},
+  {cat:'cafe', name:'Oven Voula', query:'Oven, Voula, Athens', area:'Voula', tags:['beach','ride'], blurb:'Third-wave bakery-café — artisan bread, brunch and smoothie bowls by the coast.'},
+  {cat:'cafe', name:'Riviera Coast', query:'Riviera Coast, Voula, Athens', area:'Voula', tags:['beach','ride','view'], blurb:'Huge seafront all-day café-restaurant by Kavouri beach.'},
 ];
 
 const CAT = {
-  attraction:{label:'Attraction', color:'#2d7dd2'},
   restaurant:{label:'Restaurant', color:'#2e9e5b'},
   bar:{label:'Bar', color:'#8e44ad'},
-  shop:{label:'Shops', color:'#8d6e4f'},
-  transit:{label:'Transit', color:'#0e98b0'},
-  money:{label:'Money', color:'#64748b'},
-  bites:{label:'Quick bite', color:'#dc4b4b'},
+  cafe:{label:'Coffee', color:'#c0883a'},
 };
 
 /* ---------- Load Google Maps (only if a real key is present) ---------- */
@@ -502,7 +495,7 @@ let clusterer=null, useCluster=false, _syncTimer=null;   // marker clustering (p
 let favs = new Set(), shareData = null, dirService = null, dirRenderer = null;
 let routeMode=false, routeIdx=null, routeDest=null, routeOrigin='base', pendingLoc=null, firstFix=true;
 let measureMode=false, measurePts=[], measureLine=null, measureDots=[]; // 📏 ruler tool state
-const state = { cat:'all', q:'', filters:{fav:false, open:false, vegan:false, veganopt:false, sport:false, beach:false, view:false, walk:false}, active:null };
+const state = { cat:'all', q:'', filters:{fav:false, open:false, vegan:false, veganopt:false, veg:false, sport:false, beach:false, view:false, walk:false}, active:null };
 const RES = {}; // index -> {id, lat, lng}  (resolved location)
 const CARD = {}; // index -> {rating, count, price}  (light info for list)
 const HOURS = {}; // index -> {periods, utc}  (opening hours, for the “open now” badge + filter)
@@ -844,7 +837,8 @@ function buildList(){
 
 function metaHtml(idx){
   const p=PLACES[idx]; const bits=[];
-  if(p.cat==='restaurant') bits.push(p.vegan==='full' ? `<span class="badge veg">🌱 100% vegan</span>` : p.vegan==='options' ? `<span class="badge opt">vegan options</span>` : `<span class="badge nonveg">🍖 not vegan</span>`);
+  if(p.cat==='restaurant') bits.push(p.vegan==='full' ? `<span class="badge veg">🌱 100% vegan</span>` : p.vegan==='options' ? `<span class="badge opt">🥗 vegan options</span>` : p.vegan==='veg' ? `<span class="badge opt">🥦 vegetarian</span>` : `<span class="badge nonveg">🍖 meat / non-veg</span>`);
+  else if(p.cat==='cafe' && p.vegan==='full') bits.push(`<span class="badge veg">🌱 100% vegan</span>`);
   if((p.tags||[]).includes('sport')) bits.push(`<span class="badge sport">📺 football</span>`);
   if((p.tags||[]).includes('view')) bits.push(`<span class="badge view">🌅 view</span>`);
   if((p.tags||[]).includes('view') && isGoldenHour()) bits.push(`<span class="badge gold">🌅 golden hour now</span>`);
@@ -875,6 +869,7 @@ function visible(idx){
   if(state.filters.fav && !favs.has(idx)) return false;
   if(state.filters.vegan && !(p.cat==='restaurant' && p.vegan==='full')) return false;
   if(state.filters.veganopt && !(p.cat==='restaurant' && (p.vegan==='options' || p.vegan==='full'))) return false; // "has vegan options" includes the 100%-vegan spots
+  if(state.filters.veg && !(p.cat==='restaurant' && (p.vegan==='veg' || p.vegan==='options' || p.vegan==='full'))) return false; // vegetarian-friendly = veg, vegan-options or fully vegan
   if(state.filters.sport && !(p.tags||[]).includes('sport')) return false;
   if(state.filters.beach && !(p.tags||[]).includes('beach')) return false;
   if(state.filters.view && !(p.tags||[]).includes('view')) return false;
