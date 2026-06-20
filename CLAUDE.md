@@ -77,7 +77,7 @@ stale — Google is the chosen path.
 
 | Piece | What it means | Status |
 |---|---|---|
-| **Content** | Curated attractions, bars, vegan **& non-vegan** restaurants, beach/Riviera spots, football bars & practical pins | ✅ Done — **92 places** (21 attractions incl. 4 beach, 22 bars incl. 3 football, 26 restaurants incl. 6 non-vegan, 23 essentials → 🛒 14 shops / 🚆 4 transit / 🏧 2 money / 🍴 3 quick-bites). History: 65→63 closure sweep → 65 (Essentials split, +2) → **92** after a within-1 km expansion (+27: shops/pharmacies with no rating bar + restaurants/bars filtered to Google **≥4.6**). |
+| **Content** | Curated attractions, bars, vegan **& non-vegan** restaurants, beach/Riviera spots, football bars & practical pins | ✅ Rebuilt 2026-06-20 — **88 food & drink places** (43 restaurants · 23 bars · 22 cafés; bars/restaurants/cafés only; central 15-min walk + full Athens Riviera; all Google ≥4.4; non-food pins removed). Prior: **92 places** (21 attractions incl. 4 beach, 22 bars incl. 3 football, 26 restaurants incl. 6 non-vegan, 23 essentials → 🛒 14 shops / 🚆 4 transit / 🏧 2 money / 🍴 3 quick-bites). History: 65→63 closure sweep → 65 (Essentials split, +2) → **92** after a within-1 km expansion (+27: shops/pharmacies with no rating bar + restaurants/bars filtered to Google **≥4.6**). |
 | **The map + pins** | Google Map with a colored pin per place, grouped by category | ✅ Built (classic `google.maps.Marker`) |
 | **Pin info cards** | Tap a pin → card with Google rating, reviews, photos, hours, directions | ✅ Built |
 | **Live location** | Map shows the user's live position and can follow them | ✅ Built (works on the hosted https link) |
@@ -150,7 +150,7 @@ etc. are **resolved live at runtime** by `Place.searchByText(query)` and then
 
 ### Map behavior (as built)
 - Centered on the home base (§2) at a walking-distance zoom.
-- Pins **color-coded by category** (attractions / restaurants / bars / 🛒 shops / 🚆 transit / 🏧 money / 🍴 quick-bites — the old single "essentials" group is now these four distinct categories, each its own colour).
+- Pins **color-coded by category** (restaurants / bars / ☕ cafés — **food & drink only** as of the 2026-06-20 rebuild; the earlier attractions/shops/transit/money/quick-bites categories were removed).
 - A **🏠 house-shaped home marker** for the apartment (an inline-SVG icon, not a
   plain dot); tap it to draw a walking route home from your live location.
   Distances/walk-times are measured from there.
@@ -318,7 +318,7 @@ Allowed research domains are pre-approved in `.claude/settings.local.json`
 > Update this section as work progresses so anyone opening the project knows
 > where things stand.
 
-- [x] Curated places — **92 total** (21 attractions incl. 4 beach, 22 bars incl. 3 football, 26 restaurants incl. 6 non-vegan, 23 essentials → 🛒 14 shops / 🚆 4 transit / 🏧 2 money / 🍴 3 quick-bites)
+- [x] Curated places — **88 food & drink** (rebuilt 2026-06-20: 43 restaurants · 23 bars · 22 cafés; **bars/restaurants/cafés only**, all Google **≥4.4**, central 15-min walk + full Riviera; attractions/shops/transit/money/quick-bites **removed** per the user). Prior **92 total** mixed list.
 - [x] **Data accuracy sweep (closures/rebrands)** via `_pwtest/audit.mjs` (compares each place's live Google name + `businessStatus` to ours): renamed Los Vegans→**Mariloulou**, repointed **Mama Tierra**→Acropolis branch, **Dope Roasting**→**Taf Coffee**, removed **Crudo** (now a fish taverna) + **Beer Academy** (→"beertime", unverified for football); kept **six d.o.g.s** (Google "closed" flag is stale). Re-run `audit.mjs` before a trip to re-check. Temp-closed to watch: Kerameikos, Avocado, A for Athens, Holy Spirit.
 - [x] Place lookup wired (live via `Place.searchByText` + `localStorage` cache — no stored IDs)
 - [x] `index.html` map with Google Maps + color-coded pins + 🏠 home base
