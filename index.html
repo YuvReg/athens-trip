@@ -1,380 +1,151 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Athens · Our Trip</title>
-<meta name="description" content="Our Athens trip map — best attractions, bars and vegan-friendly restaurants near Plateia Eleftherias, with live location and Google ratings." />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5"/>
+<title>Athens — our trip map</title>
+<meta name="description" content="Our Athens trip: curated bars, restaurants and cafés near the apartment + the Riviera. Free OpenStreetMap, live location, no account needed."/>
 
-<!-- ============================================================= -->
-<!--  STEP 1 of 2 — PASTE YOUR GOOGLE MAPS API KEY BELLOW           -->
-<!--  Replace the text YOUR_GOOGLE_MAPS_API_KEY (keep the quotes).  -->
-<!--  Full click-by-click instructions are in SETUP.md             -->
-<!-- ============================================================= -->
-<script>
-  window.GOOGLE_MAPS_API_KEY = "AIzaSyD7QkfZhMDvzUyRiyN-n8h_vxZHFBGJjtg";
-</script>
-<!-- ============================================================= -->
-
+<!-- Leaflet (free map library) + OpenStreetMap tiles — NO API key, NO Google, NO billing. -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
   :root{
-    --sea:#0e5a8a; --sea-2:#1e88c7;
-    --ink:#15293a; --muted:#5c7488; --line:#e4ecf2;
-    --bg:#f4f9fc; --card:#ffffff;
-    --attraction:#2d7dd2; --restaurant:#2e9e5b; --bar:#8e44ad; --home:#e8772e;
-    --shop:#8d6e4f; --transit:#0e98b0; --money:#64748b; --bites:#dc4b4b; --cafe:#c0883a;   /* (old essentials colours, now unused) + ☕ café pin colour */
-    --gold:#f2b01e; --shadow:0 6px 24px rgba(16,46,72,.12);
-    --r:16px;
+    --ink:#0f2a3f; --muted:#5b7186; --line:#e4ecf2; --card:#fff; --bg:#f3f7fa;
+    --sea:#1e88c7; --sea-2:#0e5a8a;
+    --restaurant:#2e9e5b; --bar:#8e44ad; --cafe:#c0883a; --home:#e8772e;
+    --shadow:0 6px 20px rgba(10,40,70,.10);
   }
   *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; font-family:'Inter',system-ui,Segoe UI,Roboto,Arial,sans-serif;
-    color:var(--ink); background:var(--bg); -webkit-font-smoothing:antialiased;
-  }
-  a{color:var(--sea)}
+  html,body{margin:0;height:100%}
+  body{font-family:Inter,system-ui,Arial,sans-serif;color:var(--ink);background:var(--bg);-webkit-text-size-adjust:100%}
+  .app{display:flex;flex-direction:column;height:100dvh}
+  header.top{padding:10px 14px;background:linear-gradient(120deg,#0e5a8a,#1e88c7);color:#fff;flex:none}
+  header.top h1{margin:0;font-family:'Playfair Display',serif;font-size:21px;font-weight:800;letter-spacing:.2px}
+  header.top .sub{font-size:12px;opacity:.92;margin-top:2px}
 
-  /* ---------- App shell ---------- */
-  .app{display:grid; grid-template-rows:auto 1fr; height:100%;}
-  header.top{
-    background:linear-gradient(115deg,#0e5a8a,#1e88c7);
-    color:#fff; padding:14px 20px; display:flex; align-items:center; gap:16px;
-    box-shadow:0 2px 14px rgba(10,60,110,.25); z-index:30;
-  }
-  header.top .brand{display:flex; flex-direction:column; line-height:1.1}
-  header.top h1{font-family:'Playfair Display',serif; font-weight:800; font-size:24px; margin:0; letter-spacing:.2px}
-  header.top .sub{font-size:12.5px; opacity:.92; margin-top:3px}
-  header.top .sub b{font-weight:600}
-  header.top .spacer{flex:1}
-  header.top .help{
-    background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.3);
-    padding:8px 13px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;
-  }
-  header.top .help:hover{background:rgba(255,255,255,.26)}
+  .filters{flex:none;background:#fff;border-bottom:1px solid var(--line);padding:8px 10px}
+  .row{display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+  .row::-webkit-scrollbar{display:none}
+  .chip,.toggle{flex:none;border:1px solid var(--line);background:#fff;color:var(--ink);
+    padding:7px 12px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
+  .chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chip[data-cat="restaurant"][aria-pressed="true"]{background:var(--restaurant);border-color:var(--restaurant)}
+  .chip[data-cat="bar"][aria-pressed="true"]{background:var(--bar);border-color:var(--bar)}
+  .chip[data-cat="cafe"][aria-pressed="true"]{background:var(--cafe);border-color:var(--cafe)}
+  .toggle[aria-pressed="true"]{background:#e7f3fb;border-color:var(--sea);color:var(--sea-2)}
+  .dot{width:9px;height:9px;border-radius:50%}
+  .toggles{margin-top:7px}
 
-  .main{display:grid; grid-template-columns:392px 1fr; min-height:0;}
+  .main{flex:1;display:flex;flex-direction:column;min-height:0}
+  #map{height:44dvh;flex:none;z-index:1;background:#dfe7ee}
+  .leaflet-control-attribution{font-size:9px}
 
-  /* ---------- Sidebar ---------- */
-  .sidebar{display:flex; flex-direction:column; min-height:0; background:var(--bg); border-right:1px solid var(--line);}
-  .controls{padding:14px 16px 10px; border-bottom:1px solid var(--line); background:var(--card);}
-  .search{
-    width:100%; padding:11px 14px 11px 38px; border:1px solid var(--line); border-radius:12px;
-    font-size:14px; background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235c7488' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") no-repeat 13px center;
-  }
-  .search:focus{outline:none; border-color:var(--sea-2); box-shadow:0 0 0 3px rgba(30,136,199,.15)}
-  .chips{display:flex; gap:8px; margin-top:11px; flex-wrap:wrap}
-  .chip{
-    border:1px solid var(--line); background:#fff; color:var(--muted); font-size:13px; font-weight:600;
-    padding:7px 12px; border-radius:999px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
-    transition:.15s;
-  }
-  .chip .dot{width:9px;height:9px;border-radius:50%}
-  .chip[aria-pressed="true"]{color:#fff; border-color:transparent}
-  .chip[data-cat="all"][aria-pressed="true"]{background:var(--ink)}
-  .chip[data-cat="attraction"][aria-pressed="true"]{background:var(--attraction)}
-  .chip[data-cat="restaurant"][aria-pressed="true"]{background:var(--restaurant)}
-  .chip[data-cat="bar"][aria-pressed="true"]{background:var(--bar)}
-  .chip[data-cat="cafe"][aria-pressed="true"]{background:var(--cafe)}
-  .chip[data-cat="shop"][aria-pressed="true"]{background:var(--shop)}
-  .chip[data-cat="transit"][aria-pressed="true"]{background:var(--transit)}
-  .chip[data-cat="money"][aria-pressed="true"]{background:var(--money)}
-  .chip[data-cat="bites"][aria-pressed="true"]{background:var(--bites)}
-  .toggles{display:flex; gap:8px; margin-top:9px; flex-wrap:wrap}
-  .toggle{
-    font-size:12.5px; font-weight:600; color:var(--muted); border:1px dashed var(--line); background:#fff;
-    padding:6px 11px; border-radius:999px; cursor:pointer;
-  }
-  .toggle[aria-pressed="true"]{color:var(--sea); border-style:solid; border-color:var(--sea-2); background:#eef7fd}
-  .countline{font-size:12px; color:var(--muted); padding:9px 16px 0}
+  .listwrap{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:8px 12px 80px}
+  .count{font-size:12px;color:var(--muted);margin:4px 2px 8px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin-bottom:10px;cursor:pointer;position:relative;transition:box-shadow .15s,border-color .15s}
+  .card:active{border-color:var(--sea)}
+  .card.active{border-color:var(--sea-2);box-shadow:0 0 0 3px rgba(30,136,199,.15)}
+  .card h3{margin:0 26px 2px 0;font-size:15.5px;font-weight:700}
+  .meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .pin{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .blurb{font-size:12.5px;color:#33485c;margin-top:6px;line-height:1.4}
+  .badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+  .badge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:#eef4f8;color:#37536b}
+  .badge.veg{background:#e7f6ec;color:#1f7a44}
+  .badge.opt{background:#eaf6ee;color:#2c7a4e}
+  .badge.meat{background:#f6ece7;color:#9c5a2e}
+  .badge.area{background:#eef2f6;color:#4a5e72}
+  .star{position:absolute;top:10px;right:10px;font-size:19px;line-height:1;cursor:pointer;color:#c7d3dd;user-select:none}
+  .star.on{color:#f5b301}
 
-  .list{overflow-y:auto; padding:8px 12px 24px; min-height:0; flex:1}
-  .card{
-    background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 13px; margin-bottom:10px;
-    cursor:pointer; transition:.15s; position:relative;
-  }
-  .card:hover{box-shadow:var(--shadow); transform:translateY(-1px); border-color:#d4e4ef}
-  .card.active{border-color:var(--sea-2); box-shadow:0 0 0 3px rgba(30,136,199,.15)}
-  .card .ttl{display:flex; align-items:flex-start; gap:9px; padding-right:26px}
-  .card .cdot{width:11px;height:11px;border-radius:50%; margin-top:5px; flex:none}
-  .card h3{font-size:15px; margin:0; font-weight:700; line-height:1.25}
-  .card .meta{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:5px 0 0 20px; font-size:12.5px; color:var(--muted)}
-  .card .blurb{font-size:12.8px; color:#3f586c; margin:7px 0 0 20px; line-height:1.45}
-  .badge{font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; letter-spacing:.2px}
-  .badge.veg{background:#e7f6ec; color:#1f7a44}
-  .badge.opt{background:#eef7e9; color:#5b7a2e}
-  .badge.nonveg{background:#f6ece7; color:#9c5a2e}   /* restaurant with no vegan field = clearly tagged "not vegan" */
-  .badge.view{background:#fff3df; color:#a76a12}
-  .badge.ride{background:#eef1f5; color:#5c7488}
-  .badge.price{background:#f1f5f8; color:#41607a; font-weight:600}
-  .rate{display:inline-flex; align-items:center; gap:4px; font-weight:700; color:#234; font-size:12.5px}
-  .rate .stars{color:var(--gold); letter-spacing:1px}
-  .rate .cnt{color:var(--muted); font-weight:500}
-  .rate.loading{color:#aab8c4; font-weight:500}
-  .card .fav{position:absolute; top:9px; right:9px; width:30px;height:30px; border:none; background:transparent; cursor:pointer; font-size:19px; line-height:1; color:#cdd8e1; padding:0; z-index:2; transition:transform .12s}
-  .card .fav:hover{transform:scale(1.18)}
-  .card .fav.on{color:var(--gold)}
-  .badge.gold{background:#fff3df; color:#a76a12}
-  .badge.sport{background:#eaf3ff; color:#2d6fd2}
-  .badge.open{background:#e7f6ec; color:#1f7a44}
-  .badge.closed{background:#fdecec; color:#b23a3a}
-  .sharepicks{margin:10px 16px 0; width:calc(100% - 32px); padding:9px; border:1px solid var(--sea-2); background:#eef7fd; color:var(--sea); border-radius:10px; font-size:13px; font-weight:700; cursor:pointer}
-  .sharepicks:hover{background:#e0f0fb}
-  .routebox{margin-top:14px; border-top:1px solid var(--line); padding-top:12px}
-  .routehead{font-weight:800; font-size:14px; margin-bottom:9px}
-  .routehead .from{font-weight:500; color:var(--muted); font-size:12.5px}
-  .step{display:flex; gap:9px; margin-bottom:9px}
-  .step .stepn{flex:none; width:20px;height:20px; border-radius:50%; background:#eef1f5; color:var(--sea); font-weight:700; font-size:11px; display:grid; place-items:center; margin-top:1px}
-  .step .stepi{font-size:12.8px; color:#3f586c; line-height:1.4}
-  .step .stepd{color:var(--muted); font-size:11.5px; margin-top:2px}
-  .routenote{font-size:12px; color:var(--muted); font-style:italic; margin-top:8px}
+  /* bottom-sheet detail */
+  .detail{position:fixed;left:0;right:0;bottom:0;z-index:1000;background:#fff;border-radius:18px 18px 0 0;
+    box-shadow:0 -10px 30px rgba(10,40,70,.22);transform:translateY(110%);transition:transform .25s;max-height:82dvh;overflow-y:auto;padding:14px 16px 24px}
+  .detail.open{transform:translateY(0)}
+  .detail .grab{width:42px;height:5px;border-radius:3px;background:#d7e0e8;margin:2px auto 10px}
+  .detail h2{margin:0 0 4px;font-family:'Playfair Display',serif;font-size:22px}
+  .detail .x{position:absolute;top:12px;right:14px;font-size:22px;color:var(--muted);cursor:pointer;line-height:1}
+  .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .btn{flex:1 1 46%;text-align:center;text-decoration:none;border-radius:11px;padding:11px 10px;font-size:13.5px;font-weight:700;border:1px solid var(--line);color:var(--ink);background:#fff;cursor:pointer}
+  .btn.primary{background:var(--sea);color:#fff;border-color:var(--sea)}
+  .btn.wa{background:#25d366;color:#fff;border-color:#25d366}
+  .btn.dim{color:#9fb0bd;background:#f6f9fb}
 
-  /* ---------- Route mode (tap “Show walking route” → full map + route) ---------- */
-  .routeui{position:absolute; inset:0; z-index:30; display:none; pointer-events:none}
-  .routeui.show{display:block}
-  .routebar{position:absolute; top:12px; left:12px; right:12px; display:flex; gap:9px; align-items:center; pointer-events:auto}
-  .rback{background:#fff; border:none; box-shadow:var(--shadow); border-radius:999px; padding:10px 15px; font-weight:700; font-size:14px; color:var(--ink); cursor:pointer; flex:none}
-  .rback:hover{background:#f3f8fb}
-  .origintoggle{display:flex; background:#fff; border-radius:999px; box-shadow:var(--shadow); overflow:hidden; flex:1; max-width:330px}
-  .origintoggle button{flex:1; border:none; background:#fff; padding:10px 10px; font-size:12.5px; font-weight:700; color:var(--muted); cursor:pointer; white-space:nowrap}
-  .origintoggle button.on{background:var(--sea); color:#fff}
-  .originlabel{flex:1; max-width:330px; background:#fff; border-radius:999px; box-shadow:var(--shadow); padding:10px 14px; font-size:12.5px; font-weight:700; color:var(--sea); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .routepanel{position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:18px 18px 0 0; box-shadow:0 -8px 30px rgba(10,40,70,.22); max-height:42vh; overflow-y:auto; padding:14px 16px 16px; pointer-events:auto}
-  .routego{display:block; text-align:center; background:var(--sea); color:#fff; border:none; border-radius:11px; padding:11px; font-weight:700; font-size:13.5px; text-decoration:none; margin:4px 0 12px}
-  .routego:hover{filter:brightness(.97)}
-  body.routing .fab, body.routing .legend{display:none}
+  .ctrls{position:absolute;right:12px;z-index:600;display:flex;flex-direction:column;gap:8px}
+  .mbtn{width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .mbtn.on{background:var(--sea);color:#fff;border-color:var(--sea)}
 
-  /* ---------- Map ---------- */
-  .mapwrap{position:relative; min-height:0}
-  #map{width:100%; height:100%}
-  .fab{
-    position:absolute; right:14px; bottom:24px; z-index:6; width:48px; height:48px; border-radius:50%;
-    background:#fff; border:none; box-shadow:var(--shadow); cursor:pointer; display:grid; place-items:center;
-  }
-  .fab:hover{background:#f3f8fb}
-  .fab svg{width:23px;height:23px; stroke:var(--sea); fill:none; stroke-width:2}
-  .fab.on svg{stroke:#fff} .fab.on{background:var(--sea)}
-  #homeBtn{bottom:80px} #measureBtn{bottom:136px}   /* 🏠 home + 📏 ruler stacked above the ◎ locate button */
-  .legend{
-    position:absolute; left:14px; bottom:14px; z-index:5; background:rgba(255,255,255,.94); backdrop-filter:blur(6px);
-    border:1px solid var(--line); border-radius:12px; padding:9px 12px; font-size:12px; color:var(--ink); box-shadow:var(--shadow);
-  }
-  .legend div{display:flex; align-items:center; gap:7px; margin:2px 0}
-  .legend .d{width:10px;height:10px;border-radius:50%}
-  .measurebox{position:absolute; left:14px; top:14px; z-index:7; display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.96); backdrop-filter:blur(6px); border:1px solid var(--line); border-radius:12px; padding:9px 12px; font-size:13px; font-weight:700; color:var(--ink); box-shadow:var(--shadow); max-width:calc(100% - 28px)}
-  .measurebox[hidden]{display:none}
-  .measurebox button{border:none; background:#eef1f5; color:var(--sea); font-weight:700; font-size:12px; padding:6px 10px; border-radius:999px; cursor:pointer}
-  .measurebox button:hover{background:#e0ecf5}
-  body.routing .measurebox{display:none}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(40px);opacity:0;background:#0f2a3f;color:#fff;
+    padding:10px 16px;border-radius:999px;font-size:13px;z-index:2000;transition:.25s;pointer-events:none;max-width:90vw;text-align:center}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 
-  /* ---------- Detail panel ---------- */
-  .detail{
-    position:absolute; top:14px; left:14px; width:360px; max-height:calc(100% - 28px); z-index:12;
-    background:var(--card); border-radius:var(--r); box-shadow:0 18px 50px rgba(10,40,70,.3);
-    display:flex; flex-direction:column; overflow:hidden;
-    transform:translateX(-16px); opacity:0; visibility:hidden; pointer-events:none;
-    transition:transform .28s cubic-bezier(.2,.8,.2,1), opacity .22s ease, visibility 0s linear .28s;
-  }
-  .detail.open{transform:translateX(0); opacity:1; visibility:visible; pointer-events:auto;
-    transition:transform .28s cubic-bezier(.2,.8,.2,1), opacity .22s ease, visibility 0s;}
-  .detail .hero{height:158px; background:#dde7ee center/cover no-repeat; position:relative; flex:none}
-  .detail .hero .noimg{height:100%; display:grid; place-items:center; color:#9fb3c2; font-size:13px}
-  .detail .close{position:absolute; top:10px; right:10px; width:32px;height:32px;border-radius:50%; border:none; background:rgba(0,0,0,.5); color:#fff; font-size:17px; cursor:pointer}
-  .detail .body{padding:15px 16px 18px; overflow-y:auto; flex:1; min-height:0}
-  .detail .catpill{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; padding:3px 9px; border-radius:999px; color:#fff}
-  .detail h2{font-family:'Playfair Display',serif; font-size:22px; margin:9px 0 2px; line-height:1.15}
-  .detail .addr{font-size:13px; color:var(--muted)}
-  .detail .row{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-top:10px}
-  .detail .big-rate{font-weight:800; font-size:20px}
-  .detail .big-rate .stars{color:var(--gold); font-size:16px; letter-spacing:1.5px}
-  .openpill{font-size:12px; font-weight:700; padding:3px 10px; border-radius:999px}
-  .openpill.y{background:#e7f6ec; color:#1f7a44} .openpill.n{background:#fdecec; color:#b23a3a}
-  .detail .desc{font-size:13.5px; color:#3f586c; margin-top:11px; line-height:1.5}
-  .detail .hours{font-size:12.5px; color:var(--muted); margin-top:6px}
-  .actions{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px}
-  .actions a, .actions button{
-    display:flex; align-items:center; justify-content:center; gap:7px; padding:10px; border-radius:11px;
-    font-size:13px; font-weight:700; text-decoration:none; cursor:pointer; border:1px solid var(--line); background:#fff; color:var(--ink);
-  }
-  .actions .primary{grid-column:1/-1; background:var(--sea); color:#fff; border-color:transparent}
-  .actions a:hover{filter:brightness(.97)}
-  .actions .book{grid-column:1/-1; background:#2e9e5b; color:#fff; border-color:transparent}   /* 🍽️ reserve = green, distinct from the blue route button */
-  .actions .book.off{background:#eef1f5; color:#9bb0c1; border-color:var(--line); cursor:default}   /* greyed = no online booking */
-  .actions .book.off:hover{filter:none}
-  .actions .wa{grid-column:1/-1; background:#25D366; color:#fff; border-color:transparent}   /* 💬 WhatsApp = brand green (works on WiFi, unlike a normal phone call) */
-  .actions .wa.off{background:#eef1f5; color:#9bb0c1; border-color:var(--line); cursor:default}   /* greyed = this venue isn't reachable on WhatsApp */
-  .actions .wa.off:hover{filter:none}
-  .reviews{margin-top:16px; border-top:1px solid var(--line); padding-top:13px}
-  .reviews h4{font-size:13px; margin:0 0 9px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px}
-  .rev{display:flex; gap:9px; margin-bottom:12px}
-  .rev img{width:30px;height:30px;border-radius:50%; flex:none; background:#dde7ee}
-  .rev .who{font-size:12.5px; font-weight:700}
-  .rev .when{font-size:11px; color:var(--muted)}
-  .rev .rstars{color:var(--gold); font-size:11px}
-  .rev .txt{font-size:12.5px; color:#3f586c; line-height:1.45; margin-top:3px}
-  .spin{display:inline-block; width:16px;height:16px;border:2px solid #cfe0ec; border-top-color:var(--sea); border-radius:50%; animation:sp .8s linear infinite; vertical-align:-3px}
-  @keyframes sp{to{transform:rotate(360deg)}}
-
-  /* ---------- Overlay (missing key / errors) ---------- */
-  .overlay{position:fixed; inset:0; background:rgba(13,40,66,.62); z-index:100; display:none; place-items:center; padding:20px}
-  .overlay.show{display:grid}
-  .overlay .box{background:#fff; border-radius:18px; max-width:560px; padding:28px 30px; box-shadow:0 30px 80px rgba(0,0,0,.4)}
-  .overlay h2{font-family:'Playfair Display',serif; margin:0 0 6px; font-size:24px}
-  .overlay p{font-size:14.5px; color:#3f586c; line-height:1.55}
-  .overlay code{background:#f1f5f8; padding:2px 7px; border-radius:6px; font-size:13px; color:#b23a3a}
-  .overlay ol{font-size:14px; color:#3f586c; line-height:1.7; padding-left:20px}
-
-  .toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; padding:11px 18px; border-radius:999px; font-size:13.5px; z-index:80; opacity:0; transition:.3s; pointer-events:none}
-  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
-
-  /* ---------- Mobile ---------- */
-  @media (max-width:880px){
-    .app{grid-template-rows:auto auto 1fr; height:auto; min-height:100%}
-    .main{display:flex; flex-direction:column}
-    .mapwrap{height:46vh; position:sticky; top:0; z-index:20; order:-1; box-shadow:0 6px 18px rgba(10,40,70,.18)}
-    .sidebar{border-right:none}
-    .list{max-height:none; overflow:visible}
-    header.top h1{font-size:20px}
-    .detail{
-      position:fixed; z-index:100;
-      top:auto; left:0; right:0; bottom:0; width:100%; max-height:86dvh; border-radius:20px 20px 0 0;
-      transform:translateY(110%);
-    }
-    .detail.open{transform:translateY(0)}
-    /* Route mode goes truly full-screen on a phone so the path is fully visible */
-    body.routing .mapwrap{position:fixed; inset:0; width:100%; height:100dvh; max-height:none; z-index:60}
-    body.routing header.top{display:none}
-    .routepanel{max-height:46dvh}
-    .legend{display:none}
-  }
+  .homeicon{font-size:24px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+  @media(min-width:900px){ #map{height:52dvh} .detail{left:auto;right:18px;bottom:18px;width:420px;border-radius:18px} }
 </style>
 </head>
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand">
-      <h1>Athens ~ Gazi Al Tadlik Et Duma</h1>
-      <div class="sub">Home base: <b>Pl. Eleftherias 22</b></div>
-    </div>
-    <div class="spacer"></div>
+    <h1>Athens — our trip map</h1>
+    <div class="sub">88 bars · restaurants · cafés near Pl. Eleftherias 22 + the Riviera</div>
   </header>
 
+  <div class="filters">
+    <div class="row" id="chips">
+      <button class="chip" data-cat="all" aria-pressed="true">All</button>
+      <button class="chip" data-cat="restaurant" aria-pressed="false"><span class="dot" style="background:var(--restaurant)"></span>Eat</button>
+      <button class="chip" data-cat="bar" aria-pressed="false"><span class="dot" style="background:var(--bar)"></span>Bars</button>
+      <button class="chip" data-cat="cafe" aria-pressed="false"><span class="dot" style="background:var(--cafe)"></span>☕ Coffee</button>
+    </div>
+    <div class="row toggles" id="toggles">
+      <button class="toggle" data-f="fav" aria-pressed="false">⭐ Favorites</button>
+      <button class="toggle" data-f="vegan" data-show="restaurant,cafe" aria-pressed="false">🌱 Fully vegan</button>
+      <button class="toggle" data-f="veganopt" data-show="restaurant" aria-pressed="false">🥗 Vegan options</button>
+      <button class="toggle" data-f="veg" data-show="restaurant" aria-pressed="false">🥦 Vegetarian</button>
+      <button class="toggle" data-f="sport" data-show="bar" aria-pressed="false">⚽ Football</button>
+      <button class="toggle" data-f="beach" aria-pressed="false">🏖️ Beach/Riviera</button>
+      <button class="toggle" data-f="view" aria-pressed="false">🌅 Great view</button>
+      <button class="toggle" data-f="walk" aria-pressed="false">🚶 Walkable</button>
+    </div>
+  </div>
+
   <div class="main">
-    <aside class="sidebar">
-      <div class="controls">
-        <input class="search" id="search" type="search" placeholder="Search places…" autocomplete="off" />
-        <div class="chips" id="chips">
-          <button class="chip" data-cat="all" aria-pressed="true">All</button>
-          <button class="chip" data-cat="restaurant" aria-pressed="false"><span class="dot" style="background:var(--restaurant)"></span>Eat</button>
-          <button class="chip" data-cat="bar" aria-pressed="false"><span class="dot" style="background:var(--bar)"></span>Bars</button>
-          <button class="chip" data-cat="cafe" aria-pressed="false"><span class="dot" style="background:var(--cafe)"></span>☕ Coffee</button>
-        </div>
-        <div class="toggles" id="toggles">
-          <button class="toggle" data-f="fav" aria-pressed="false">⭐ Favorites</button>
-          <button class="toggle" data-f="open" aria-pressed="false">🟢 Open now</button>
-          <button class="toggle" data-f="vegan" data-show="restaurant" aria-pressed="false">🌱 Fully vegan</button>
-          <button class="toggle" data-f="veganopt" data-show="restaurant" aria-pressed="false">🥗 Vegan options</button>
-          <button class="toggle" data-f="veg" data-show="restaurant" aria-pressed="false">🥦 Vegetarian</button>
-          <button class="toggle" data-f="sport" data-show="bar" aria-pressed="false">⚽ Football</button>
-          <button class="toggle" data-f="beach" data-show="all,restaurant,bar,cafe" aria-pressed="false">🏖️ Beach</button>
-          <button class="toggle" data-f="view" data-show="all,restaurant,bar,cafe" aria-pressed="false">🌅 Great view</button>
-          <button class="toggle" data-f="walk" aria-pressed="false">🚶 Walkable</button>
-        </div>
-        <button class="sharepicks" id="sharePicks" hidden>📤 Share my picks with the group</button>
+    <div id="map">
+      <div class="ctrls" style="bottom:14px">
+        <button class="mbtn" id="locateBtn" title="Show my location">◎</button>
+        <button class="mbtn" id="homeBtn" title="Center on the apartment">🏠</button>
       </div>
-      <div class="countline" id="countline"></div>
-      <div class="list" id="list"></div>
-    </aside>
-
-    <div class="mapwrap">
-      <div id="map"></div>
-      <button class="fab" id="measureBtn" title="Measure a distance on the map">
-        <svg viewBox="0 0 24 24"><path d="M3 8h18v8H3z"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/></svg>
-      </button>
-      <button class="fab" id="homeBtn" title="Walk me to the apartment">
-        <svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9"/><path d="M10 19v-5h4v5"/></svg>
-      </button>
-      <button class="fab" id="locateBtn" title="Show my location">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
-      </button>
-      <div class="legend">
-        <div><span class="d" style="background:var(--home)"></span> Your apartment</div>
-        <div><span class="d" style="background:var(--attraction)"></span> Attractions</div>
-        <div><span class="d" style="background:var(--restaurant)"></span> Restaurants</div>
-        <div><span class="d" style="background:var(--bar)"></span> Bars</div>
-        <div><span class="d" style="background:var(--shop)"></span> Shops</div>
-        <div><span class="d" style="background:var(--transit)"></span> Transit</div>
-        <div><span class="d" style="background:var(--money)"></span> Money</div>
-        <div><span class="d" style="background:var(--bites)"></span> Quick bites</div>
-      </div>
-      <div class="measurebox" id="measureBox" hidden>
-        <span id="measureTotal">Tap the map to start measuring</span>
-        <button id="measureClear" title="Clear points">Clear</button>
-      </div>
-
-      <div class="detail" id="detail">
-        <div class="hero" id="hero"><div class="noimg">No photo</div><button class="close" id="closeBtn">×</button></div>
-        <div class="body" id="detailBody"></div>
-      </div>
-
-      <!-- Full-map walking-route view (appears after tapping “Show walking route here”) -->
-      <div class="routeui" id="routeui">
-        <div class="routebar">
-          <button class="rback" id="routeBack">←&nbsp; Back</button>
-          <div class="origintoggle" id="originToggle">
-            <button data-o="base" class="on">🏠 From apartment</button>
-            <button data-o="me">📍 From my location</button>
-          </div>
-          <div class="originlabel" id="originLabel" style="display:none">📍 Walking home from your location</div>
-        </div>
-        <div class="routepanel" id="routePanel"></div>
-      </div>
+    </div>
+    <div class="listwrap">
+      <div class="count" id="count"></div>
+      <div id="list"></div>
     </div>
   </div>
 </div>
 
-<div class="overlay" id="overlay">
-  <div class="box" id="overlayBox"></div>
-</div>
+<div class="detail" id="detail"></div>
 <div class="toast" id="toast"></div>
-
-<!-- Marker-clustering library: groups nearby pins into numbered bubbles so the phone draws only
-     a handful of markers at a time (smooth pan/zoom even with lots of places). From a CDN; if it
-     fails to load, the map silently falls back to plain pins (see useCluster below). -->
-<script src="https://cdn.jsdelivr.net/npm/@googlemaps/markerclusterer@2.5.3/dist/index.min.js"></script>
 
 <script>
 /* =====================================================================
-   THE PLACES  — curated for Pl. Eleftherias 22, Athens
-   Each item is resolved live against Google so ratings/photos/reviews
-   are always current. "query" is what we ask Google to find.
-
-   Editing cheat-sheet (safe for non-coders):
-   • cat   : 'attraction' | 'restaurant' | 'bar' | 'shop' | 'transit' | 'money' | 'bites'
-             (the last 4 are the split "essentials": shop=supermarket/pharmacy,
-              transit=metro+bus, money=banks+exchange, bites=quick eats/coffee)
-   • tags  : optional list — 'must','view','sunset','ride','beach','sport'
-             ('ride'/'beach' = it's a trip out, shown as tram/taxi not a walk)
-   • vegan : restaurants only — 'full' (100% vegan) | 'options' (good vegan picks).
-             Omit it on a restaurant and the card shows a 🍖 "not vegan" tag (the omnivore picks).
-   • price : optional — '€' | '€€' | '€€€'
-   • book  : optional — reservation URL (TheFork / e-restaurants / venue's own page).
-             Omit it if the place is walk-in / phone-only → card shows "No online booking".
-   • wa    : optional — the venue's WhatsApp number, e.g. '+30 698 156 3511'. Shows a
-             "💬 WhatsApp" button that works on WiFi (no SIM / no phone plan needed). Omit
-             → card shows greyed "No WhatsApp". Only add a number you've VERIFIED is really
-             on WhatsApp (a Greek +30 69… mobile) — landlines (+30 21…) are not on WhatsApp.
+   Athens trip map — FREE OpenStreetMap (Leaflet) build.
+   No Google, no API key, no billing, no credit to run out. Ever.
+   Pins are placed by neighbourhood immediately, then sharpened to the
+   exact spot via the free OpenStreetMap geocoder (cached on the phone).
+   Ratings/reviews/photos live one tap away via "Open in Google Maps".
    ===================================================================== */
-const BASE = { lat: 37.98028, lng: 23.72139 }; // Pl. Eleftherias 22 / Koumoundourou Sq (corrected 2026-06-19: old 37.98186,23.72361 sat ~270m NE of the actual square)
 
+const BASE = { lat: 37.98028, lng: 23.72139 }; // Pl. Eleftherias 22 / Koumoundourou Sq
 
 const PLACES = [
   /* ===================== CENTRAL — within ~15-min walk of the apartment ===================== */
 
-  // ---- RESTAURANTS · vegan / vegetarian (Google ≥4.4) ----
+  // ---- RESTAURANTS · vegan / vegetarian ----
   {cat:'restaurant', name:'Mariloulou', query:'Mariloulou, Plateon 37, Athens', area:'Metaxourgeio', vegan:'full', price:'€€', blurb:'Plant-based Greek bistro ~5 min away (the former Los Vegans) — vegan soutzoukakia, moussaka and mezze in a cozy food-and-art room.'},
   {cat:'restaurant', name:'Veganistan', query:'Veganistan, Keramikou 101, Athens', area:'Kerameikos', vegan:'full', price:'€', blurb:'Cozy local deli for cruelty-free salads, soups, snacks and mezze — right by the square.'},
   {cat:'restaurant', name:'Rhino Vegan Beat', query:'Rhino Vegan Beat, Perikleous 56, Athens', area:'Monastiraki', vegan:'full', price:'€€', blurb:'Award-winning vegan street food — mushroom gyros, pastitsio and truffle mayo in an arcade off Ermou.'},
@@ -396,7 +167,7 @@ const PLACES = [
   {cat:'restaurant', name:'Nice n Easy', query:'Nice n Easy, Omirou 60, Athens', area:'Syntagma', vegan:'options', price:'€€', blurb:'All-day organic bistro with clearly-labeled vegan + gluten-free dishes alongside the omnivore menu.'},
   {cat:'restaurant', name:'Avocado', query:'Avocado Vegetarian Cafe, Nikis 30, Athens', area:'Syntagma', vegan:'veg', price:'€€', blurb:'Athens’ pioneering veg café (since 2010) near the National Garden — creative, allergen-marked, most items veganizable.'},
 
-  // ---- RESTAURANTS · meat / seafood / everything (Google ≥4.4) ----
+  // ---- RESTAURANTS · meat / seafood / everything ----
   {cat:'restaurant', name:'Thes', query:'Thes Greek Creative Cuisine, Taki 16, Psyrri, Athens', area:'Psyrri', price:'€€', blurb:'Creative modern Greek — reinvented moussaka, feta-cheese donuts, tuna tartare. A TripAdvisor “Best of the Best”; book ahead.'},
   {cat:'restaurant', name:'Ta Karamanlidika tou Fani', query:'Ta Karamanlidika tou Fani, Sokratous 1, Athens', area:'Omonia', book:'https://www.karamanlidika.gr/', price:'€€', blurb:'Deli-meze institution — pastourma, cured meats and cheeses with free little appetizers. Booking recommended.'},
   {cat:'restaurant', name:'Oineas', query:'Oineas Restaurant, Aisopou 9, Psyrri, Athens', area:'Psyrri', book:'https://www.e-restaurants.gr/en/estiatorio/oineas-psirri', price:'€€', blurb:'Classic taverna with vintage decor and a car-free terrace — pork with honey & thyme, lamb with orzo.'},
@@ -413,7 +184,7 @@ const PLACES = [
   {cat:'restaurant', name:'Avli', query:'Avli, Agiou Dimitriou 12, Psyrri, Athens', area:'Psyrri', price:'€', blurb:'Hidden courtyard taverna off a Psyrri arcade — cheap, cheerful meze and grills, lively at night.'},
   {cat:'restaurant', name:'Birdman', query:'Birdman, Skoufou 2, Syntagma, Athens', area:'Syntagma', price:'€€€', blurb:'Japanese yakitori & robata grill — skewers over binchotan charcoal and a sake list. Sleek and small; book ahead.'},
 
-  // ---- BARS (Google ≥4.4) ----
+  // ---- BARS ----
   {cat:'bar', name:'The Clumsies', query:'The Clumsies, Praxitelous 30, Athens', area:'Center', blurb:'Athens’ most famous bar — a perennial World’s 50 Best — flawless, inventive cocktails in a neoclassical townhouse.'},
   {cat:'bar', name:'Line', query:'Line bar, Lofos Sikelias, Kato Petralona, Athens', book:'https://www.i-host.gr/Reservations/New?restaurant=589&channel=fb&lang=eng', area:'Petralona', blurb:'No. 8 in the World’s 50 Best Bars 2025 — sleek, zero-waste, farm-to-glass drinks by the Clumsies team.'},
   {cat:'bar', name:'Baba au Rum', query:'Baba au Rum, Klitiou 6, Athens', area:'Center', blurb:'400+ rums and tiki-tinged classics — a World’s 50 Best “Legend of the List”.'},
@@ -431,12 +202,11 @@ const PLACES = [
   {cat:'bar', name:'Couleur Locale', query:'Couleur Locale, Normanou 3, Monastiraki, Athens', area:'Monastiraki', tags:['view'], blurb:'Hidden boho rooftop with a stunning Parthenon view and a less touristy crowd.'},
   {cat:'bar', name:'A for Athens', query:'A for Athens rooftop bar, Miaouli 2-4, Monastiraki, Athens', area:'Monastiraki', tags:['view'], blurb:'The classic Monastiraki rooftop — the most dramatic head-on Acropolis view. Book ahead.'},
   {cat:'bar', name:'Brettos', query:'Brettos Bar, Kidathineon 41, Plaka, Athens', area:'Plaka', blurb:'Athens’ oldest distillery (est. 1909) — a glowing wall of colored bottles, ouzo, brandy and 35+ liqueurs.'},
-  // sports bars (live football — handy for the World Cup ⚽)
   {cat:'bar', name:'Athens Sports Bar', query:'Athens Sports Bar, Veikou 3a, Makrygianni, Athens', area:'Makrygianni', tags:['sport'], blurb:'Athens’ dedicated sports bar — 8 big HD screens with all the football, craft beer + bar food. ~15-min walk.'},
   {cat:'bar', name:'James Joyce Irish Pub', query:'The James Joyce Irish Pub, Astiggos 12, Monastiraki, Athens', area:'Monastiraki', tags:['sport'], blurb:'Lively Monastiraki Irish pub — screens locked on the match, Guinness on tap, proper pub grub.'},
   {cat:'bar', name:'The Lucky Sparrow', query:'The Lucky Sparrow Pub, Persefonis 20, Kerameikos, Athens', area:'Kerameikos', tags:['sport'], wa:'+30 697 502 6836', blurb:'Craft-beer & rock pub by Kerameikos metro that beams the big matches — late hours suit evening kickoffs.'},
 
-  // ---- COFFEE / CAFÉS / DESSERT (Google ≥4.4) ----
+  // ---- COFFEE / CAFÉS / DESSERT ----
   {cat:'cafe', name:'Taf Coffee', query:'Taf Coffee, Emmanouil Benaki 7, Athens', area:'Center', blurb:'Award-winning specialty roastery for a morning espresso or freddo — ~6 min toward Exarchia.'},
   {cat:'cafe', name:'Mokka', query:'Mokka Specialty Coffee, Athinas 44, Athens', area:'Omonia', blurb:'Old-school roastery (since 1922) by the Central Market — strong Greek coffee and traditional sweets.'},
   {cat:'cafe', name:'Samba Coffee Roasters', query:'Samba Coffee Roasters The Shop, Athens', area:'Kolonaki', blurb:'Family roaster (since 1979) with a polished flagship — consistently top-rated coffee. ~15-min walk.'},
@@ -474,688 +244,232 @@ const PLACES = [
   {cat:'cafe', name:'Riviera Coast', query:'Riviera Coast, Voula, Athens', area:'Voula', tags:['beach','ride','view'], blurb:'Huge seafront all-day café-restaurant by Kavouri beach.'},
 ];
 
-const CAT = {
-  restaurant:{label:'Restaurant', color:'#2e9e5b'},
-  bar:{label:'Bar', color:'#8e44ad'},
-  cafe:{label:'Coffee', color:'#c0883a'},
+const CAT = { restaurant:{label:'Restaurant',color:'#2e9e5b'}, bar:{label:'Bar',color:'#8e44ad'}, cafe:{label:'Coffee',color:'#c0883a'} };
+
+// Neighbourhood centres — pins drop here instantly, then sharpen to the exact spot via OSM geocoding.
+const AREA = {
+  'Center':[37.9803,23.7250],'Koumoundourou Sq':[37.98028,23.72139],'Psyrri':[37.9785,23.7256],
+  'Monastiraki':[37.9762,23.7258],'Plaka':[37.9722,23.7300],'Kerameikos':[37.9786,23.7150],
+  'Gazi':[37.9772,23.7110],'Metaxourgeio':[37.9846,23.7185],'Syntagma':[37.9755,23.7348],
+  'Omonia':[37.9842,23.7283],'Makrygianni':[37.9685,23.7290],'Koukaki':[37.9650,23.7250],
+  'Exarchia':[37.9866,23.7335],'Petralona':[37.9690,23.7060],'Kolonaki':[37.9790,23.7430],
+  'Pl. Vathis':[37.9880,23.7270],'Glyfada':[37.8650,23.7540],'Vouliagmeni':[37.8090,23.7810],
+  'Voula':[37.8460,23.7700],'Alimos':[37.9120,23.7050]
 };
 
-/* ---------- Load Google Maps (only if a real key is present) ---------- */
-const KEY = window.GOOGLE_MAPS_API_KEY || "";
-const KEY_OK = KEY && !KEY.startsWith("YOUR_") && KEY.length > 20;
-if (KEY_OK) {
-  (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
-    key: KEY, v: "weekly", language: "en", region: "GR",
+const $=s=>document.querySelector(s);
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const cacheGet=k=>{try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}};
+const cacheSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2600);}
+
+function haversine(a,b){const R=6371000,r=Math.PI/180,
+  dLat=(b.lat-a.lat)*r,dLng=(b.lng-a.lng)*r,
+  s=Math.sin(dLat/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLng/2)**2;
+  return Math.round(2*R*Math.asin(Math.sqrt(s)));}
+
+const state={cat:'all',q:'',filters:{fav:false,vegan:false,veganopt:false,veg:false,sport:false,beach:false,view:false,walk:false}};
+let favs=new Set(cacheGet('ath_favs')||[]);
+let map, userMarker, accCircle, watchId=null, following=false;
+const els=[];   // list DOM nodes by index
+
+/* ---------- start coords: neighbourhood centre + a small stable spread ---------- */
+function startCoords(p,idx){
+  const c=AREA[p.area]||[BASE.lat,BASE.lng];
+  const jLat=(((idx*73)%100)/100-0.5)*0.0015;
+  const jLng=(((idx*127)%100)/100-0.5)*0.0019;
+  return {lat:c[0]+jLat, lng:c[1]+jLng};
+}
+
+function pinColor(p){return CAT[p.cat].color;}
+
+function init(){
+  map=L.map('map',{zoomControl:true,attributionControl:true}).setView([BASE.lat,BASE.lng],15);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19, attribution:'&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // 🏠 apartment marker
+  L.marker([BASE.lat,BASE.lng],{icon:L.divIcon({className:'',html:'<div class="homeicon">🏠</div>',iconSize:[26,26],iconAnchor:[13,13]}),zIndexOffset:1000})
+    .addTo(map).on('click',()=>toast('🏠 Your apartment — Pl. Eleftherias 22'));
+
+  PLACES.forEach((p,idx)=>{
+    const cached=cacheGet('ath_xy_'+p.query);
+    p._ll=cached||startCoords(p,idx);
+    p._exact=!!cached;
+    p._dist=haversine(BASE,p._ll);
+    p._marker=L.circleMarker([p._ll.lat,p._ll.lng],{radius:7,weight:2,color:'#fff',fillColor:pinColor(p),fillOpacity:1})
+      .on('click',()=>openDetail(idx));
+    p._marker.addTo(map);
   });
+
+  buildList();
+  wireControls();
+  applyFilters();
+  geocodeAll();         // sharpen pins in the background (free OSM geocoder, cached)
+  setTimeout(()=>map.invalidateSize(),300);
 }
 
-/* ---------- State ---------- */
-let map, Place, Marker, Circle, userMarker, accCircle, following=false, watchId=null, detailToken=0;
-let clusterer=null, useCluster=false, _syncTimer=null;   // marker clustering (perf): clusterer instance + on/off flag + debounce timer
-let favs = new Set(), shareData = null, dirService = null, dirRenderer = null;
-let routeMode=false, routeIdx=null, routeDest=null, routeOrigin='base', pendingLoc=null, firstFix=true;
-let measureMode=false, measurePts=[], measureLine=null, measureDots=[]; // 📏 ruler tool state
-const state = { cat:'all', q:'', filters:{fav:false, open:false, vegan:false, veganopt:false, veg:false, sport:false, beach:false, view:false, walk:false}, active:null };
-const RES = {}; // index -> {id, lat, lng}  (resolved location)
-const CARD = {}; // index -> {rating, count, price}  (light info for list)
-const HOURS = {}; // index -> {periods, utc}  (opening hours, for the “open now” badge + filter)
-const els = {}; // index -> list DOM node
-
-const $ = s => document.querySelector(s);
-const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const haversine = (a,b)=>{const R=6371000,t=x=>x*Math.PI/180,dLa=t(b.lat-a.lat),dLo=t(b.lng-a.lng),
-  s=Math.sin(dLa/2)**2+Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(s));};
-const fmtDist = m => m<950 ? `${Math.round(m/10)*10} m` : `${(m/1000).toFixed(1)} km`;
-const fmtWalk = m => `${Math.max(1,Math.round((m*1.3)/83))} min walk`; // ×1.3 for Athens' dense, hilly streets
-// "Far" spots (beaches + ride-out sights) get tram/taxi wording instead of a silly "240 min walk", and hand routing to Google Maps.
-const isFar = idx => { const p=PLACES[idx]; return (p.tags||[]).includes('beach') || (p.tags||[]).includes('ride') || (p._dist!=null && p._dist>3000); };
-const detailDistLine = idx => { const p=PLACES[idx]; if(p._dist==null) return ''; return isFar(idx)
-  ? `<div class="hours">🚊 ${fmtDist(p._dist)} from your apartment · by tram/taxi</div>`
-  : `<div class="hours">🚶 ${fmtDist(p._dist)} from your apartment · ${fmtWalk(p._dist)}</div>`; };
-const stars = r => { const f=Math.round(r); return '★★★★★'.slice(0,f)+'☆☆☆☆☆'.slice(0,5-f); };
-const priceEuro = p => { if(p==null) return ''; const map={PRICE_LEVEL_FREE:0,PRICE_LEVEL_INEXPENSIVE:1,PRICE_LEVEL_MODERATE:2,PRICE_LEVEL_EXPENSIVE:3,PRICE_LEVEL_VERY_EXPENSIVE:4}; let n=typeof p==='number'?p:map[p]; return n? '€'.repeat(n):''; };
-
-function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3200); }
-
-/* ---------- Favorites (saved per-device, shareable via link) ---------- */
-function loadFavs(){
-  try{ favs = new Set(JSON.parse(localStorage.getItem('ath_favs_v1')||'[]')); }catch(e){ favs = new Set(); }
-  const shared = new URLSearchParams(location.search).get('favs');
-  if(shared){ shared.split(',').forEach(n=>{ const i=parseInt(n,10); if(!isNaN(i)) favs.add(i); }); saveFavs(); }
-}
-function saveFavs(){ try{ localStorage.setItem('ath_favs_v1', JSON.stringify([...favs])); }catch(e){} }
-function toggleFav(i){ favs.has(i)?favs.delete(i):favs.add(i); saveFavs(); updateFavUI(i); }
-function updateFavUI(i){
-  if(i!=null && els[i]){ const b=els[i].querySelector('.fav'); if(b){ const on=favs.has(i); b.classList.toggle('on',on); b.textContent=on?'★':'☆'; } }
-  const sp=$('#sharePicks'); if(sp) sp.hidden = favs.size===0;
-  if(state.filters.fav) applyFilters();
-}
-async function sharePicks(){
-  if(favs.size===0){ toast('Tap the ☆ on places to save them first'); return; }
-  const url = location.origin+location.pathname+'?favs='+[...favs].sort((a,b)=>a-b).join(',');
-  if(navigator.share){ try{ await navigator.share({title:'Our Athens picks', text:'Here are the spots I saved for our trip:', url}); return; }catch(e){} }
-  try{ await navigator.clipboard.writeText(url); toast('Shareable link copied to clipboard!'); }catch(e){ toast(url); }
-}
-async function sharePlace(){
-  if(!shareData) return;
-  if(navigator.share){ try{ await navigator.share({title:shareData.title, text:shareData.title, url:shareData.url}); return; }catch(e){} }
-  try{ await navigator.clipboard.writeText(shareData.url); toast('Link copied!'); }catch(e){ toast(shareData.url); }
-}
-// Athens wall-clock — so golden-hour & open-now are correct even if the page is opened from another country.
-function athensNow(){
-  const f=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Athens',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false});
-  const o={}; f.formatToParts(new Date()).forEach(p=>o[p.type]=p.value);
-  const days={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
-  const day = days[o.weekday] ?? new Date().getDay();
-  let hh=parseInt(o.hour,10); if(hh===24) hh=0;            // some engines render midnight as "24"
-  return { day, min: hh*60+parseInt(o.minute,10) };
-}
-const isGoldenHour = () => { const h=Math.floor(athensNow().min/60); return h>=16 && h<21; }; // late-afternoon → sunset (Athens time)
-// Open right now? Computed from cached opening-hours periods + Athens time, so the boolean is never stale.
-function isOpenNow(periods){
-  if(!periods || !periods.length) return null;
-  const now=athensNow(), nowAbs=now.day*1440+now.min;
-  for(const per of periods){
-    if(per.open && !per.close) return true;                // 24-hour place
-    if(!per.open || !per.close) continue;
-    const o=per.open.day*1440+(per.open.hour||0)*60+(per.open.minute||0);
-    let c=per.close.day*1440+(per.close.hour||0)*60+(per.close.minute||0);
-    if(c<=o) c+=10080;                                      // closes after midnight / wraps past Sunday
-    if((nowAbs>=o && nowAbs<c) || (nowAbs+10080>=o && nowAbs+10080<c)) return true;
-  }
-  return false;
-}
-
-/* ---------- In-site walking route (Directions API) — full-map “route mode” ----------
-   Tapping “Show walking route here” hides the place card, blows the map up to full
-   size, draws the route, and shows a Back button + a “from apartment / from me”
-   switch. The route stays put until you tap Back (or open another place).            */
-function clearRoute(){ if(dirRenderer) dirRenderer.setMap(null); }
-function syncOriginToggle(){ document.querySelectorAll('#originToggle button').forEach(b=>b.classList.toggle('on', b.dataset.o===routeOrigin)); }
-
-function showRoute(idx){
-  const loc=RES[idx], p=PLACES[idx];
-  if(!loc){ toast('Still loading this place, give it a second.'); return; }
-  routeIdx = idx;
-  routeDest = { lat:loc.lat, lng:loc.lng, name:p.name, id:loc.id,
-    gmapsUrl:`https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}&travelmode=walking`, homeRoute:false };
-  routeOrigin = userMarker ? 'me' : 'base';   // if your blue dot is already on, start the route from you
-  enterRouteMode();
-  drawRoute();
-}
-// House: walk to the apartment from wherever you are. Origin is ALWAYS you (from-apartment-to-apartment makes no sense).
-function showRouteToHome(){
-  routeIdx = null;
-  routeDest = { lat:BASE.lat, lng:BASE.lng, name:'Your apartment', id:null,
-    gmapsUrl:`https://www.google.com/maps/dir/?api=1&destination=${BASE.lat},${BASE.lng}&travelmode=walking`, homeRoute:true };
-  routeOrigin = 'me';
-  enterRouteMode();
-  drawRoute();   // drawRoute() asks for a GPS fix first if we do not have one yet
-}
-function enterRouteMode(){
-  exitMeasure();                               // can't measure and route at the same time
-  routeMode = true;
-  $('#detail').classList.remove('open');       // hide the photo/card so the map is fully visible
-  document.body.classList.add('routing');
-  $('#routeui').classList.add('show');
-  const home = !!(routeDest && routeDest.homeRoute);
-  $('#originToggle').style.display = home ? 'none' : '';   // a home route is always "from me" -> hide the switch
-  $('#originLabel').style.display  = home ? '' : 'none';
-  syncOriginToggle();
-}
-function teardownRouteUI(){
-  routeMode = false;
-  document.body.classList.remove('routing');
-  const ui=$('#routeui'); if(ui) ui.classList.remove('show');
-  $('#originToggle').style.display=''; $('#originLabel').style.display='none';   // restore the switch for the next place route
-  clearRoute();
-}
-function exitRouteMode(){
-  const idx = routeIdx, wasHome = !!(routeDest && routeDest.homeRoute);
-  teardownRouteUI();
-  routeDest = null;
-  if(idx!=null){ $('#detail').classList.add('open'); if(RES[idx]) map.panTo({lat:RES[idx].lat,lng:RES[idx].lng}); } // back to the normal place card
-  else if(wasHome){ map.panTo(BASE); }                                          // home route: just recentre on the house
-}
-function setRouteOrigin(o){ if(routeDest && routeDest.homeRoute) return; if(o!==routeOrigin){ routeOrigin=o; syncOriginToggle(); drawRoute(); } }
-
-async function drawRoute(){
-  const dest=routeDest; if(!dest) return;
-  const panel=$('#routePanel');
-  const gmapDir = dest.gmapsUrl;
-  if(!dirService){ panel.innerHTML=`<div class="routenote">Route isn’t available for this place yet — give it a moment to load.</div>`; return; }
-  // Routing “from me” but we don’t have a GPS fix yet → get one, then redraw.
-  let origin = routeOrigin==='me' ? (userMarker ? userMarker.getPosition() : null) : BASE;
-  if(routeOrigin==='me' && !origin){
-    panel.innerHTML=`<div class="routehead">Finding your location <span class="spin"></span></div>`;
-    ensureLocation(()=>drawRoute());
-    return;
-  }
-  const fromLabel = routeOrigin==='me' ? 'you' : 'your apartment';
-  panel.innerHTML=`<div class="routehead">Loading route <span class="spin"></span></div>`;
-  try{
-    const res = await dirService.route({ origin, destination:{lat:dest.lat,lng:dest.lng}, travelMode: google.maps.TravelMode.WALKING });
-    dirRenderer.setMap(map); dirRenderer.setDirections(res);
-    const leg = res.routes[0].legs[0];
-    const steps = leg.steps.map((s,i)=>`<div class="step"><span class="stepn">${i+1}</span><div><div class="stepi">${s.instructions||''}</div><div class="stepd">${s.distance?s.distance.text:''}</div></div></div>`).join('');
-    panel.innerHTML =
-      `<div class="routehead">🚶 ${leg.distance.text} · ${leg.duration.text} <span class="from">from ${fromLabel} to ${esc(dest.name)}</span></div>
-       <a class="routego" href="${gmapDir}" target="_blank" rel="noopener">🧭 Live turn-by-turn in Google Maps</a>
-       ${steps}
-       <div class="routenote">Walking estimate from Google. For live turn-by-turn navigation, tap the blue button above.</div>`;
-    // frame the whole route above the bottom steps panel
-    const ph = panel.getBoundingClientRect().height || 0;
-    if(res.routes[0].bounds) map.fitBounds(res.routes[0].bounds, {top:78, bottom:Math.round(ph)+24, left:36, right:36});
-  }catch(e){ console.error('route', e);
-    panel.innerHTML =
-      `<div class="routenote">Couldn’t load the in-site route. Tap below to open it in Google Maps instead.</div>
-       <a class="routego" href="${gmapDir}" target="_blank" rel="noopener">🧭 Open in Google Maps</a>`;
-  }
-}
-
-/* ---------- 📏 Ruler / measure tool — tap two+ points on the map, see the distance ---------- */
-function toggleMeasure(){ if(routeMode) return; measureMode ? exitMeasure() : startMeasure(); }
-function startMeasure(){
-  measureMode=true; $('#measureBtn').classList.add('on'); $('#measureBox').hidden=false;
-  closeDetail();                                  // get the card out of the way
-  if(map) map.setOptions({draggableCursor:'crosshair'});
-  renderMeasure();
-}
-// Each map tap while measuring drops a point + extends the line.
-function addMeasurePoint(latLng){
-  measurePts.push({lat:latLng.lat(), lng:latLng.lng()});
-  measureDots.push(new Marker({ map, position:latLng, zIndex:99998,
-    icon:{path:google.maps.SymbolPath.CIRCLE, scale:5, fillColor:'#0e5a8a', fillOpacity:1, strokeColor:'#fff', strokeWeight:2} }));
-  if(!measureLine) measureLine=new google.maps.Polyline({ map, path:measurePts.slice(), geodesic:true, strokeColor:'#0e5a8a', strokeOpacity:.9, strokeWeight:3 });
-  else measureLine.setPath(measurePts);
-  renderMeasure();
-}
-function measureTotalMeters(){ let m=0; for(let i=1;i<measurePts.length;i++) m+=haversine(measurePts[i-1],measurePts[i]); return m; }
-function renderMeasure(){
-  const el=$('#measureTotal'); if(!el) return;
-  if(measurePts.length<2){ el.textContent = measurePts.length ? 'Tap another point...' : 'Tap the map or any pin to measure'; return; }
-  const m=measureTotalMeters(); el.textContent=`📏 ${fmtDist(m)} · ${fmtWalk(m)}`;
-}
-function clearMeasure(){
-  measurePts=[];
-  if(measureLine){ measureLine.setMap(null); measureLine=null; }
-  measureDots.forEach(d=>d.setMap(null)); measureDots=[];
-  renderMeasure();
-}
-function exitMeasure(){
-  if(!measureMode) return;
-  clearMeasure(); measureMode=false;
-  $('#measureBtn').classList.remove('on'); $('#measureBox').hidden=true;
-  if(map) map.setOptions({draggableCursor:null});
-}
-
-/* ---------- Cache helpers (cuts API calls + speeds repeat visits) ---------- */
-const cacheGet = (k,maxAgeMs)=>{ try{const v=JSON.parse(localStorage.getItem(k)); if(!v) return null; if(maxAgeMs && v.t && (new Date().getTime()-v.t)>maxAgeMs) return null; return v.d;}catch(e){return null;} };
-const cacheSet = (k,d)=>{ try{localStorage.setItem(k,JSON.stringify({t:new Date().getTime(),d}));}catch(e){} };
-
-/* ===================================================================== */
-async function init(){
-  loadFavs();
-  if (!KEY_OK){ showKeyOverlay(); buildList(); return; }
-  try{
-    const [mapsLib, mk, pl, routesLib] = await Promise.all([
-      google.maps.importLibrary('maps'),
-      google.maps.importLibrary('marker'),
-      google.maps.importLibrary('places'),
-      google.maps.importLibrary('routes'),
-    ]);
-    const { Map, InfoWindow } = mapsLib;
-    Marker = mk.Marker || google.maps.Marker; Place = pl.Place; Circle = mapsLib.Circle;
-
-    map = new Map($('#map'), {
-      center: BASE, zoom: 15, clickableIcons:false, gestureHandling:'greedy',
-      mapTypeControl:false, streetViewControl:false, fullscreenControl:false,
-      styles: MAP_STYLE,
-    });
-    dirService = new routesLib.DirectionsService();
-    dirRenderer = new routesLib.DirectionsRenderer({ map, suppressMarkers:true, polylineOptions:{strokeColor:'#0e5a8a', strokeWeight:5, strokeOpacity:.85} });
-    dirRenderer.setMap(null);
-
-    // Home base marker — a little house (see homeIcon()); tap it to walk home from where you are
-    const homeMarker = new Marker({
-      map, position: BASE, title:'Your apartment — Pl. Eleftherias 22 (tap to walk here)', zIndex:9999,
-      icon: homeIcon(),
-    });
-    homeMarker.addListener('click', ()=> measureMode ? addMeasurePoint(homeMarker.getPosition()) : showRouteToHome());   // 📏 while measuring, tapping the house measures TO the apartment
-
-    // ── Marker clustering (perf): collapse nearby place-pins into numbered bubbles so the phone
-    // only ever draws a few markers at once — smooth pan/zoom, and place-count stops mattering.
-    // If the clusterer library didn't load, useCluster stays false and we fall back to plain pins.
-    useCluster = !!(window.markerClusterer && window.markerClusterer.MarkerClusterer);
-    if(useCluster){ clusterer = new markerClusterer.MarkerClusterer({ map }); }
-
-    buildList();
-    wireControls();
-    resolveAll();
-  }catch(err){ console.error(err); showErrorOverlay(err); buildList(); }
-}
-
-// A lightweight place-pin: a flat colour dot drawn ONCE to a tiny canvas and reused (cached per
-// colour) as a raster image. Raster icons render on Google's fast "optimized" path — the old
-// SVG-symbol pins forced the slow per-pin path that made pan/zoom lag with many places.
-const _pinCache = {};
-function pin(color){
-  if(_pinCache[color]) return _pinCache[color];
-  const r=8, bw=2.5, pad=2, size=Math.ceil((r+bw/2+pad)*2);
-  const cv=document.createElement('canvas'); cv.width=cv.height=size;
-  const ctx=cv.getContext('2d');
-  ctx.beginPath(); ctx.arc(size/2,size/2,r,0,2*Math.PI);
-  ctx.fillStyle=color; ctx.fill();
-  ctx.lineWidth=bw; ctx.strokeStyle='#ffffff'; ctx.stroke();
-  return _pinCache[color] = { url:cv.toDataURL(), scaledSize:new google.maps.Size(size,size), anchor:new google.maps.Point(size/2,size/2) };
-}
-// 🏠 House marker for the apartment — an inline SVG drawn right here (no image file), crisp at any zoom.
-// IMPORTANT: inside a data-URI every "#" colour MUST be written "%23", or the browser cuts the SVG off there.
-function homeIcon(){
-  const svg =
-    `<svg xmlns='http://www.w3.org/2000/svg' width='42' height='42' viewBox='0 0 42 42'>`
-    + `<circle cx='21' cy='21' r='15.5' fill='%23ffffff' stroke='%23e8772e' stroke-width='2.5'/>`
-    + `<path d='M21 11 L30 19.5 L27.2 19.5 L27.2 29 L14.8 29 L14.8 19.5 L12 19.5 Z' fill='%23e8772e'/>`
-    + `<rect x='18.4' y='22.5' width='5.2' height='6.5' rx='1' fill='%23ffffff'/>`
-    + `</svg>`;
-  return { url:'data:image/svg+xml;utf8,'+svg, scaledSize:new google.maps.Size(42,42), anchor:new google.maps.Point(21,21) };
-}
-
-/* ---------- Resolve each place against Google, then add markers ---------- */
-async function resolveAll(){
-  let i=0; const pool=8; // 8 at a time so the 65 lookups finish fast; still well under the daily cap
-  const next = async ()=>{ const idx=i++; if(idx>=PLACES.length) return; await resolveOne(idx); await next(); };
-  await Promise.all(Array.from({length:pool}, next));
-}
-
-async function resolveOne(idx){
-  const p = PLACES[idx];
-  try{
-    let loc = cacheGet('ath_loc_'+p.query); // place id+coords (safe to cache long-term)
-    if(!loc){
-      const { places } = await Place.searchByText({
-        textQuery:p.query, fields:['id','location'], locationBias:{center:BASE, radius:2600},
-        maxResultCount:1, region:'gr', language:'en',
-      });
-      if(!places || !places.length){ console.warn('Not found:', p.query); p._failed=true; updateListMeta(idx); return; }
-      loc = { id:places[0].id, lat:places[0].location.lat(), lng:places[0].location.lng() };
-      cacheSet('ath_loc_'+p.query, loc);
-    }
-    RES[idx]=loc;
-    p._dist = haversine(BASE, {lat:loc.lat, lng:loc.lng});
-
-    // marker
-    const m = new Marker({ map: useCluster ? null : map, optimized:true, position:{lat:loc.lat,lng:loc.lng}, title:p.name, icon:pin(CAT[p.cat].color) });
-    m.addListener('click', ()=> measureMode ? addMeasurePoint(m.getPosition()) : openDetail(idx));   // 📏 while measuring, tapping a pin drops a point ON it instead of opening it
-    p._marker = m;
-    applyFiltersToOne(idx);
-    updateListMeta(idx);
-    if(state.filters.walk) applyFilters(); // distances now known → refresh walkable list & count
-
-    // hours cache (free, from a previous visit) — lets us show 🟢/🔴 without a call
-    const ch=cacheGet('ath_hours_'+loc.id, 7*864e5); if(ch) HOURS[idx]=ch;
-    // Rating: use the 30-day cache instantly if we have it; otherwise fetch in the BACKGROUND so the
-    // pin + list row show NOW and this worker moves straight on to the next place (no waiting on a call).
-    const light = cacheGet('ath_card_'+loc.id, 30*864e5);
-    if(light){ CARD[idx]=light; updateListRating(idx); }
-    else { hydrateCard(idx, loc.id); }   // fire-and-forget; the ⭐ fills in a moment later
-  }catch(e){ console.warn('resolve failed', p.query, e); p._failed=true; updateListMeta(idx); }
-}
-
-// Background rating fetch — fills in the ⭐ AFTER the pin is already on the map, so load feels instant.
-// Cached 30 days — the max Google's terms allow for place data (Place IDs forever, other data ≤30 days).
-// Only review TEXT & photos must stay live (fetched fresh on card-open, never stored). Ratings barely
-// move over a trip, so the longer cache means instant ⭐ AND far fewer paid Google calls.
-async function hydrateCard(idx, id){
-  try{
-    const lp = new Place({id});
-    await lp.fetchFields({ fields:['rating','userRatingCount','priceLevel'] });
-    const light = { rating:lp.rating||null, count:lp.userRatingCount||0, price:lp.priceLevel||null };
-    cacheSet('ath_card_'+id, light); CARD[idx]=light; updateListRating(idx);
-  }catch(e){ /* leave the "rating…" placeholder; tapping the card still loads full details */ }
-}
-
-/* ---------- Build & render the sidebar list ---------- */
+/* ---------- list ---------- */
 function buildList(){
   const list=$('#list'); list.innerHTML='';
-  const frag=document.createDocumentFragment();   // build all 65 cards off-screen, attach once (1 reflow, not 65)
   PLACES.forEach((p,idx)=>{
-    const c=document.createElement('div'); c.className='card'; c.dataset.idx=idx;
-    c.innerHTML = `
-      <button class="fav${favs.has(idx)?' on':''}" title="Save to favorites">${favs.has(idx)?'★':'☆'}</button>
-      <div class="ttl"><span class="cdot" style="background:${CAT[p.cat].color}"></span><h3>${p.name}</h3></div>
-      <div class="meta" data-meta></div>
-      <div class="blurb">${p.blurb}</div>`;
-    c.addEventListener('click', ()=> KEY_OK ? openDetail(idx) : toast('Add your Google key first — see the SETUP.md guide.'));
-    c.querySelector('.fav').addEventListener('click', e=>{ e.stopPropagation(); toggleFav(idx); });
-    frag.appendChild(c); els[idx]=c;
-    updateListMeta(idx);
+    const d=document.createElement('div'); d.className='card'; d.dataset.idx=idx;
+    d.innerHTML=cardHTML(p,idx);
+    d.addEventListener('click',e=>{ if(e.target.classList.contains('star')) return; openDetail(idx); });
+    list.appendChild(d); els[idx]=d;
   });
-  list.appendChild(frag);   // one attach for all 65 cards
-  applyFilters();
+  list.addEventListener('click',e=>{ if(e.target.classList.contains('star')){ e.stopPropagation(); toggleFav(+e.target.dataset.i);} });
+}
+function dietBadge(p){
+  if(p.vegan==='full') return '<span class="badge veg">🌱 100% vegan</span>';
+  if(p.vegan==='options') return '<span class="badge opt">🥗 vegan options</span>';
+  if(p.vegan==='veg') return '<span class="badge opt">🥦 vegetarian</span>';
+  if(p.cat==='restaurant') return '<span class="badge meat">🍖 meat / non-veg</span>';
+  return '';
+}
+function distLabel(p){
+  if((p.tags||[]).includes('ride')) return '🏖️ Riviera · tram/taxi';
+  const m=p._dist; const mins=Math.max(1,Math.round(m/80));
+  const dtxt = m>=1000 ? (m/1000).toFixed(1)+' km' : m+' m';
+  return `🚶 ${dtxt} · ~${mins} min${p._exact?'':' ≈'}`;
+}
+function cardHTML(p,idx){
+  const tagbits=[];
+  if((p.tags||[]).includes('sport')) tagbits.push('<span class="badge">⚽ football</span>');
+  if((p.tags||[]).includes('view')) tagbits.push('<span class="badge">🌅 view</span>');
+  return `<span class="star ${favs.has(idx)?'on':''}" data-i="${idx}">${favs.has(idx)?'★':'☆'}</span>
+    <h3>${esc(p.name)}</h3>
+    <div class="meta"><span class="pin" style="background:${pinColor(p)}"></span>${esc(CAT[p.cat].label)}
+      <span class="badge area">${esc(p.area||'')}</span>${p.price?'<span class="badge">'+esc(p.price)+'</span>':''}
+      <span>${distLabel(p)}</span></div>
+    <div class="badges">${dietBadge(p)}${tagbits.join('')}</div>
+    <div class="blurb">${esc(p.blurb||'')}</div>`;
 }
 
-function metaHtml(idx){
-  const p=PLACES[idx]; const bits=[];
-  if(p.cat==='restaurant') bits.push(p.vegan==='full' ? `<span class="badge veg">🌱 100% vegan</span>` : p.vegan==='options' ? `<span class="badge opt">🥗 vegan options</span>` : p.vegan==='veg' ? `<span class="badge opt">🥦 vegetarian</span>` : `<span class="badge nonveg">🍖 meat / non-veg</span>`);
-  else if(p.cat==='cafe' && p.vegan==='full') bits.push(`<span class="badge veg">🌱 100% vegan</span>`);
-  if((p.tags||[]).includes('sport')) bits.push(`<span class="badge sport">📺 football</span>`);
-  if((p.tags||[]).includes('view')) bits.push(`<span class="badge view">🌅 view</span>`);
-  if((p.tags||[]).includes('view') && isGoldenHour()) bits.push(`<span class="badge gold">🌅 golden hour now</span>`);
-  if((p.tags||[]).includes('ride') && !(p.tags||[]).includes('beach')) bits.push(`<span class="badge ride">short ride</span>`);
-  if(p.price) bits.push(`<span class="badge price">${p.price}</span>`);
-  // open / closed — only once we know this place's hours (lazy, see HOURS)
-  const h=HOURS[idx];
-  if(h){ const o=isOpenNow(h.periods); if(o===true) bits.push(`<span class="badge open">🟢 Open</span>`); else if(o===false) bits.push(`<span class="badge closed">🔴 Closed</span>`); }
-  // rating
-  const cd=CARD[idx];
-  if(cd && cd.rating) bits.push(`<span class="rate"><span class="stars">${stars(cd.rating)}</span> ${cd.rating.toFixed(1)} <span class="cnt">(${cd.count})</span></span>`);
-  else if(p._failed) bits.push(`<span class="rate loading">⚠ tap for Google ↗</span>`);
-  else if(KEY_OK) bits.push(`<span class="rate loading" data-rate>rating…</span>`);
-  // area + distance (far spots show tram/taxi instead of a walk)
-  let geo = p.area || '';
-  if(p._dist!=null) geo += isFar(idx) ? ` · ${fmtDist(p._dist)} · tram/taxi` : ` · ${fmtDist(p._dist)}`;
-  if(geo) bits.push(`<span>${geo}</span>`);
-  return bits.join('');
-}
-function updateListMeta(idx){ const n=els[idx]; if(n) n.querySelector('[data-meta]').innerHTML=metaHtml(idx); }
-function updateListRating(idx){ updateListMeta(idx); }
-
-/* ---------- Filtering ---------- */
+/* ---------- filters ---------- */
 function visible(idx){
-  const p=PLACES[idx];
+  const p=PLACES[idx], f=state.filters;
   if(state.cat!=='all' && p.cat!==state.cat) return false;
-  if(state.q){ const q=state.q.toLowerCase(); if(!(p.name+' '+p.blurb+' '+(p.area||'')).toLowerCase().includes(q)) return false; }
-  if(state.filters.fav && !favs.has(idx)) return false;
-  if(state.filters.vegan && !(p.cat==='restaurant' && p.vegan==='full')) return false;
-  if(state.filters.veganopt && !(p.cat==='restaurant' && (p.vegan==='options' || p.vegan==='full'))) return false; // "has vegan options" includes the 100%-vegan spots
-  if(state.filters.veg && !(p.cat==='restaurant' && (p.vegan==='veg' || p.vegan==='options' || p.vegan==='full'))) return false; // vegetarian-friendly = veg, vegan-options or fully vegan
-  if(state.filters.sport && !(p.tags||[]).includes('sport')) return false;
-  if(state.filters.beach && !(p.tags||[]).includes('beach')) return false;
-  if(state.filters.view && !(p.tags||[]).includes('view')) return false;
-  if(state.filters.walk){ if((p.tags||[]).includes('ride')) return false; if(p._dist!=null && p._dist>1700) return false; }
-  if(state.filters.open){ const h=HOURS[idx]; if(h==null || isOpenNow(h.periods)!==true) return false; }
+  if(f.fav && !favs.has(idx)) return false;
+  if(f.vegan && !(p.vegan==='full')) return false;
+  if(f.veganopt && !(p.cat==='restaurant' && (p.vegan==='options'||p.vegan==='full'))) return false;
+  if(f.veg && !(p.cat==='restaurant' && (p.vegan==='veg'||p.vegan==='options'||p.vegan==='full'))) return false;
+  if(f.sport && !(p.tags||[]).includes('sport')) return false;
+  if(f.beach && !(p.tags||[]).includes('beach')) return false;
+  if(f.view && !(p.tags||[]).includes('view')) return false;
+  if(f.walk){ if((p.tags||[]).includes('ride')) return false; if(p._dist>1700) return false; }
   return true;
-}
-// Rebuild which place-pins are on the map. Clustering ON → hand the clusterer only the pins that
-// pass the current filter (it groups them into bubbles), debounced so the initial 80-pin load
-// renders once. Clustering OFF (library didn't load) → classic per-marker show/hide, as before.
-function syncMarkers(){
-  if(useCluster && clusterer){
-    clearTimeout(_syncTimer);
-    _syncTimer = setTimeout(()=>{
-      const vis=[]; PLACES.forEach((p,idx)=>{ if(p._marker && visible(idx)) vis.push(p._marker); });
-      clusterer.clearMarkers(true); clusterer.addMarkers(vis);   // clearMarkers(true)=no redraw; addMarkers redraws once
-    }, 50);
-  } else {
-    PLACES.forEach((p,idx)=>{ if(p._marker) p._marker.setVisible(visible(idx)); });
-  }
-}
-function applyFiltersToOne(idx){
-  if(useCluster){ syncMarkers(); return; }
-  const p=PLACES[idx]; if(p._marker) p._marker.setVisible(visible(idx));
 }
 function applyFilters(){
   let n=0;
-  PLACES.forEach((p,idx)=>{ const v=visible(idx); if(els[idx]) els[idx].style.display=v?'':'none'; if(!useCluster && p._marker) p._marker.setVisible(v); if(v)n++; });
-  if(useCluster) syncMarkers();
-  $('#countline').textContent = `${n} place${n!==1?'s':''} shown`;
+  PLACES.forEach((p,idx)=>{
+    const v=visible(idx);
+    if(els[idx]) els[idx].style.display=v?'':'none';
+    if(p._marker){ if(v){ if(!map.hasLayer(p._marker)) p._marker.addTo(map); } else { if(map.hasLayer(p._marker)) map.removeLayer(p._marker); } }
+    if(v)n++;
+  });
+  $('#count').textContent=`${n} place${n!==1?'s':''} shown`;
 }
-// Smart filter bar: only show the toggles relevant to the current category — and clear any that get hidden.
-function syncToggleVisibility(){
+
+/* ---------- detail (bottom sheet) ---------- */
+function openDetail(idx){
+  const p=PLACES[idx];
+  if(p._marker) map.panTo(p._marker.getLatLng());
+  els.forEach(e=>e&&e.classList.remove('active')); if(els[idx]) els[idx].classList.add('active');
+  const gmaps='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p.query);
+  const gdir='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.query)+'&travelmode=walking';
+  const acts=[`<a class="btn primary" href="${gmaps}" target="_blank" rel="noopener">🗺️ Open in Google Maps</a>`,
+    `<a class="btn" href="${gdir}" target="_blank" rel="noopener">🧭 Directions</a>`];
+  if(p.wa) acts.push(`<a class="btn wa" href="https://wa.me/${p.wa.replace(/[^0-9]/g,'')}" target="_blank" rel="noopener">💬 WhatsApp</a>`);
+  if(p.book) acts.push(`<a class="btn" href="${esc(p.book)}" target="_blank" rel="noopener">📅 Book a table</a>`);
+  $('#detail').innerHTML=`<div class="x" onclick="closeDetail()">×</div><div class="grab"></div>
+    <h2>${esc(p.name)}</h2>
+    <div class="meta"><span class="pin" style="background:${pinColor(p)}"></span>${esc(CAT[p.cat].label)}
+      <span class="badge area">${esc(p.area||'')}</span>${p.price?'<span class="badge">'+esc(p.price)+'</span>':''}
+      <span>${distLabel(p)}</span></div>
+    <div class="badges">${dietBadge(p)}</div>
+    <div class="blurb" style="margin-top:10px">${esc(p.blurb||'')}</div>
+    <div class="acts">${acts.join('')}</div>
+    <div style="font-size:11px;color:#9fb0bd;margin-top:12px">Tap “Open in Google Maps” for live ratings, reviews, photos, hours and navigation.</div>`;
+  $('#detail').classList.add('open');
+}
+function closeDetail(){ $('#detail').classList.remove('open'); els.forEach(e=>e&&e.classList.remove('active')); }
+
+/* ---------- favorites ---------- */
+function toggleFav(idx){
+  if(favs.has(idx)) favs.delete(idx); else favs.add(idx);
+  cacheSet('ath_favs',[...favs]);
+  const el=els[idx]; if(el){const s=el.querySelector('.star'); if(s){s.classList.toggle('on');s.textContent=favs.has(idx)?'★':'☆';}}
+  if(state.filters.fav) applyFilters();
+}
+
+/* ---------- controls ---------- */
+function wireControls(){
+  $('#chips').addEventListener('click',e=>{const b=e.target.closest('.chip'); if(!b)return;
+    state.cat=b.dataset.cat;
+    document.querySelectorAll('#chips .chip').forEach(c=>c.setAttribute('aria-pressed',c===b));
+    syncToggles(); applyFilters();
+  });
+  $('#toggles').addEventListener('click',e=>{const b=e.target.closest('.toggle'); if(!b)return;
+    const f=b.dataset.f, on=b.getAttribute('aria-pressed')!=='true';
+    b.setAttribute('aria-pressed',on); state.filters[f]=on; applyFilters();
+  });
+  syncToggles();
+  $('#locateBtn').addEventListener('click',toggleLocate);
+  $('#homeBtn').addEventListener('click',()=>{map.setView([BASE.lat,BASE.lng],15);});
+}
+function syncToggles(){
   document.querySelectorAll('#toggles .toggle').forEach(b=>{
-    const show=b.dataset.show, ok = !show || show.split(',').includes(state.cat);
-    b.style.display = ok ? '' : 'none';
+    const show=b.dataset.show; const ok=!show||show.split(',').includes(state.cat)||state.cat==='all';
+    b.style.display=ok?'':'none';
     if(!ok && b.getAttribute('aria-pressed')==='true'){ b.setAttribute('aria-pressed','false'); state.filters[b.dataset.f]=false; }
   });
 }
-// "passes everything except the open filter" — so we only fetch hours for places currently in view
-function passesExceptOpen(idx){ const o=state.filters.open; state.filters.open=false; const v=visible(idx); state.filters.open=o; return v; }
-// Lazy open-now: fetch hours for the visible places that lack them, cache 7 days, then re-filter. Runs only when Open-now is switched ON.
-let hydrating=false;
-async function hydrateOpenNow(){
-  if(hydrating || !KEY_OK || !Place) return;
-  const need=[]; PLACES.forEach((p,idx)=>{ if(RES[idx] && !HOURS[idx] && passesExceptOpen(idx)) need.push(idx); });
-  if(!need.length){ applyFilters(); return; }
-  hydrating=true;
-  let i=0; const pool=3;
-  const next=async()=>{ const k=i++; if(k>=need.length) return; const idx=need[k];
-    try{ const lp=new Place({id:RES[idx].id}); await lp.fetchFields({fields:['regularOpeningHours','utcOffsetMinutes']});
-      if(lp.regularOpeningHours && lp.regularOpeningHours.periods){ HOURS[idx]={periods:lp.regularOpeningHours.periods, utc:lp.utcOffsetMinutes}; cacheSet('ath_hours_'+RES[idx].id, HOURS[idx]); updateListMeta(idx); }
-    }catch(e){}
-    await next(); };
-  await Promise.all(Array.from({length:pool}, next));
-  hydrating=false;
-  if(state.filters.open) applyFilters();   // re-filter now that hours are known
-}
 
-/* ---------- Detail panel ---------- */
-async function openDetail(idx){
-  if(measureMode) return;            // 📏 ruler is on — taps only measure, don't open cards
-  const p=PLACES[idx], loc=RES[idx];
-  if(!loc){ openFallback(idx); return; }
-  setActive(idx);
-  const myToken = ++detailToken;
-  teardownRouteUI();                 // opening a new place dismisses any open route view
-  map.panTo({lat:loc.lat,lng:loc.lng}); map.setZoom(16);
-  if(p._marker){ p._marker.setAnimation(google.maps.Animation.BOUNCE); setTimeout(()=>p._marker.setAnimation(null),700); }
-
-  const panel=$('#detail'), body=$('#detailBody'), hero=$('#hero');
-  hero.style.backgroundImage=''; hero.querySelector('.noimg').style.display='grid';
-  body.innerHTML=`<p style="color:#5c7488;font-size:14px">Loading details <span class="spin"></span></p>`;
-  panel.classList.add('open');
-
-  try{
-    const place=new Place({id:loc.id});
-    await place.fetchFields({ fields:['displayName','formattedAddress','location','rating','userRatingCount','priceLevel','regularOpeningHours','reviews','photos','nationalPhoneNumber','websiteURI','googleMapsURI','editorialSummary','utcOffsetMinutes'] });
-    if(myToken!==detailToken) return; // a newer tap superseded this request — don't overwrite it
-
-    // hero photo
-    const photo = place.photos && place.photos[0];
-    if(photo){ try{ hero.style.backgroundImage=`url("${photo.getURI({maxWidth:800,maxHeight:480})}")`; hero.querySelector('.noimg').style.display='none'; }catch(e){} }
-
-    // open now
-    let openNow; try{ openNow = await place.isOpen(); }catch(e){}
-    // cache opening hours so the list can show 🟢/🔴 + power the Open-now filter (free — we already fetched them here)
-    if(place.regularOpeningHours && place.regularOpeningHours.periods){ HOURS[idx]={periods:place.regularOpeningHours.periods, utc:place.utcOffsetMinutes}; cacheSet('ath_hours_'+loc.id, HOURS[idx]); updateListMeta(idx); }
-    let todayLine='';
-    const wd = place.regularOpeningHours && place.regularOpeningHours.weekdayDescriptions;
-    if(wd && wd.length){ const gi=(new Date().getDay()+6)%7; todayLine = esc(wd[gi]||''); }
-
-    const cd = CAT[p.cat];
-    const rUri = place.googleMapsURI || `https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}&query_place_id=${loc.id}`;
-    shareData = { title: (place.displayName||p.name)+' · our Athens trip', url: rUri };
-    const far = isFar(idx);   // beaches / ride-out spots: hand off to Google Maps (transit), no in-site walk route
-    const dir = `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}&destination_place_id=${loc.id}&travelmode=${far?'transit':'walking'}`;
-    const appleDir = `https://maps.apple.com/?daddr=${loc.lat},${loc.lng}&dirflg=${far?'r':'w'}`;
-
-    body.innerHTML = `
-      <span class="catpill" style="background:${cd.color}">${cd.label}</span>
-      <h2>${esc(place.displayName||p.name)}</h2>
-      <div class="addr">${esc(place.formattedAddress||'')}</div>
-      <div class="row">
-        ${place.rating?`<span class="big-rate">${place.rating.toFixed(1)} <span class="stars">${stars(place.rating)}</span></span>
-          <span style="color:#5c7488;font-size:13px">${place.userRatingCount||0} reviews</span>`:'<span style="color:#5c7488;font-size:13px">No rating yet</span>'}
-        ${priceEuro(place.priceLevel)?`<span class="badge price">${priceEuro(place.priceLevel)}</span>`:''}
-        ${openNow===true?'<span class="openpill y">Open now</span>':openNow===false?'<span class="openpill n">Closed</span>':''}
-      </div>
-      ${detailDistLine(idx)}
-      <div class="desc">${(place.editorialSummary&&place.editorialSummary.text)?esc(place.editorialSummary.text):p.blurb}</div>
-      ${todayLine?`<div class="hours">🕒 Today: ${todayLine}</div>`:''}
-      <div class="actions">
-        ${far
-          ? `<a class="primary" href="${dir}" target="_blank" rel="noopener">🧭 Directions in Google Maps</a>`
-          : `<button class="primary" onclick="showRoute(${idx})">🗺️ Show walking route here</button>`}
-        ${(p.cat==='restaurant'||p.cat==='bar') ? (p.book
-          ? `<a class="book" href="${p.book}" target="_blank" rel="noopener">🍽️ ${/thefork\./.test(p.book)?'Book on TheFork':/e-(restaurants|table)\./.test(p.book)?'Book on e-restaurants':'Book a table'}</a>`
-          : `<span class="book off">🍽️ No online booking</span>`) : ''}
-        ${(p.cat==='restaurant'||p.cat==='bar') ? (p.wa
-          ? `<a class="wa" href="https://wa.me/${p.wa.replace(/[^\d]/g,'')}?text=${encodeURIComponent("Hello! I'd like to ask a quick question.")}" target="_blank" rel="noopener">💬 WhatsApp</a>`
-          : `<span class="wa off">💬 No WhatsApp</span>`) : ''}
-        ${!far?`<a href="${dir}" target="_blank" rel="noopener">🧭 Open in Google Maps</a>`:''}
-        <a href="${appleDir}" target="_blank" rel="noopener">🍎 Apple Maps</a>
-        <button onclick="sharePlace()">📤 Share</button>
-        ${place.websiteURI?`<a href="${place.websiteURI}" target="_blank" rel="noopener">🌐 Website</a>`:''}
-      </div>
-      ${renderReviews(place.reviews)}`;
-  }catch(e){ console.error(e);
-    if(myToken!==detailToken) return;
-    const dirF=`https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}&travelmode=walking`;
-    const appleF=`https://maps.apple.com/?daddr=${loc.lat},${loc.lng}&dirflg=w`;
-    const cdF=CAT[p.cat];
-    body.innerHTML = `
-      <span class="catpill" style="background:${cdF.color}">${cdF.label}</span>
-      <h2>${esc(p.name)}</h2>
-      ${detailDistLine(idx)}
-      <div class="desc">${p.blurb}</div>
-      <div class="hours">⚠ Couldn’t load live details (you may be offline) — but the essentials are here.</div>
-      <div class="actions">
-        <a class="primary" href="${dirF}" target="_blank" rel="noopener">🧭 Walking directions</a>
-        <a href="${appleF}" target="_blank" rel="noopener">🍎 Apple Maps</a>
-      </div>`;
-  }
-}
-
-function renderReviews(reviews){
-  if(!reviews||!reviews.length) return '';
-  const items = reviews.slice(0,3).map(r=>{
-    const who=(r.authorAttribution&&r.authorAttribution.displayName)||'Guest';
-    const img=(r.authorAttribution&&r.authorAttribution.photoURI)||'';
-    const txt=(r.text&&typeof r.text==='object')?(r.text.text||''):(r.text||'');
-    const when=r.relativePublishTimeDescription||'';
-    const shown=txt.length>240?txt.slice(0,240)+'…':txt;
-    return `<div class="rev">${img?`<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:'<div style="width:30px;height:30px;border-radius:50%;background:#dde7ee;flex:none"></div>'}
-      <div><div class="who">${esc(who)} <span class="when">· ${esc(when)}</span></div>
-      <div class="rstars">${stars(r.rating||0)}</div>
-      <div class="txt">${esc(shown)}</div></div></div>`;
-  }).join('');
-  return `<div class="reviews"><h4>Recent reviews</h4>${items}</div>`;
-}
-
-function setActive(idx){
-  if(state.active!=null && els[state.active]) els[state.active].classList.remove('active');
-  state.active=idx; const n=els[idx]; if(n){ n.classList.add('active'); n.scrollIntoView({block:'nearest',behavior:'smooth'}); }
-}
-function closeDetail(){
-  $('#detail').classList.remove('open');
-  if(state.active!=null && els[state.active]) els[state.active].classList.remove('active');
-  state.active=null; detailToken++; clearRoute(); // drop any in-flight detail render + clear route line
-}
-function openFallback(idx){
-  const p=PLACES[idx], cd=CAT[p.cat]; setActive(idx);
-  const hero=$('#hero'); hero.style.backgroundImage=''; hero.querySelector('.noimg').style.display='grid';
-  $('#detailBody').innerHTML = `
-    <span class="catpill" style="background:${cd.color}">${cd.label}</span>
-    <h2>${esc(p.name)}</h2>
-    <div class="desc">${p.blurb}</div>
-    <div class="hours">${p._failed?'Couldn’t auto-load live details for this one.':'Still loading… give it a moment, or:'}</div>
-    <div class="actions"><a class="primary" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.query)}" target="_blank" rel="noopener">📍 Find on Google Maps</a></div>`;
-  $('#detail').classList.add('open');
-}
-
-/* ---------- Controls wiring ---------- */
-function wireControls(){
-  let searchTimer=null;   // wait ~¼s after the last keystroke before re-filtering all 65 (snappier typing)
-  $('#search').addEventListener('input', e=>{ state.q=e.target.value.trim(); clearTimeout(searchTimer); searchTimer=setTimeout(applyFilters, 250); });
-  $('#chips').addEventListener('click', e=>{ const b=e.target.closest('.chip'); if(!b) return;
-    document.querySelectorAll('#chips .chip').forEach(c=>c.setAttribute('aria-pressed', c===b));
-    state.cat=b.dataset.cat; syncToggleVisibility(); applyFilters(); });
-  $('#toggles').addEventListener('click', e=>{ const b=e.target.closest('.toggle'); if(!b) return;
-    const f=b.dataset.f, on=b.getAttribute('aria-pressed')!=='true'; b.setAttribute('aria-pressed',on); state.filters[f]=on;
-    applyFilters();   // "Fully vegan" ⊂ "Vegan options": both on simply narrows to the 100%-vegan spots
-    if(f==='open' && on) hydrateOpenNow(); });
-  $('#closeBtn').addEventListener('click', closeDetail);
-  $('#routeBack').addEventListener('click', exitRouteMode);    // leave the full-map route view
-  $('#originToggle').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b) setRouteOrigin(b.dataset.o); });
-  document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ measureMode ? exitMeasure() : routeMode ? exitRouteMode() : closeDetail(); } });
-  $('#locateBtn').addEventListener('click', toggleLocate);
-  $('#homeBtn').addEventListener('click', showRouteToHome);          // 🏠 walk me home from here
-  $('#measureBtn').addEventListener('click', toggleMeasure);         // 📏 ruler
-  $('#measureClear').addEventListener('click', clearMeasure);
-  $('#sharePicks').addEventListener('click', sharePicks);
-  map.addListener('click', (e)=>{ if(measureMode){ addMeasurePoint(e.latLng); return; } if(routeMode) return; closeDetail(); });   // measure > route > dismiss the card
-  map.addListener('dragstart', ()=>{ if(following){ following=false; $('#locateBtn').classList.remove('on'); } }); // stop GPS snap-back while you look around
-  syncToggleVisibility();   // start with only the relevant toggles shown for "All"
-}
-
-/* ---------- Live location (the blue dot) ---------- */
+/* ---------- live location (blue dot) ---------- */
 function toggleLocate(){
   if(!navigator.geolocation){ toast('Your browser can’t share location.'); return; }
-  if(watchId==null){ startLocate(); return; }                       // off → start locating
-  if(!following){ following=true; $('#locateBtn').classList.add('on'); if(userMarker) map.panTo(userMarker.getPosition()); return; } // dragged away → recenter & resume follow
-  stopLocate();                                                     // following → turn off
+  if(watchId!=null){ navigator.geolocation.clearWatch(watchId); watchId=null; following=false;
+    $('#locateBtn').classList.remove('on'); if(userMarker){map.removeLayer(userMarker);userMarker=null;} if(accCircle){map.removeLayer(accCircle);accCircle=null;} return; }
+  following=true; $('#locateBtn').classList.add('on');
+  watchId=navigator.geolocation.watchPosition(pos=>{
+    const ll=[pos.coords.latitude,pos.coords.longitude], acc=pos.coords.accuracy||40;
+    if(!userMarker){
+      userMarker=L.circleMarker(ll,{radius:7,weight:3,color:'#fff',fillColor:'#1a73e8',fillOpacity:1}).addTo(map);
+      accCircle=L.circle(ll,{radius:acc,weight:1,color:'#1a73e8',fillColor:'#1a73e8',fillOpacity:.12}).addTo(map);
+      map.setView(ll,16);
+    } else { userMarker.setLatLng(ll); accCircle.setLatLng(ll); accCircle.setRadius(acc); if(following) map.panTo(ll); }
+  },err=>{ toast('Couldn’t get your location.'); $('#locateBtn').classList.remove('on'); watchId=null; },
+  {enableHighAccuracy:true,maximumAge:5000,timeout:12000});
+  map.on('dragstart',()=>{following=false;});
 }
-function startLocate(){
-  $('#locateBtn').classList.add('on'); following=true; firstFix=true;
-  if(watchId==null){                                                 // one watcher; pan+zoom only on the very first fix (no double-snap)
-    watchId=navigator.geolocation.watchPosition(p=>{
-      updateUser(p, true);
-      if(firstFix){ firstFix=false; map.panTo({lat:p.coords.latitude,lng:p.coords.longitude}); if(map.getZoom()<16) map.setZoom(16); }
-    }, onGeoErr, {enableHighAccuracy:true, maximumAge:5000, timeout:12000});
+
+/* ---------- background geocoding: sharpen pins via free OSM Nominatim (cached, throttled) ---------- */
+async function geocodeAll(){
+  for(let idx=0;idx<PLACES.length;idx++){
+    const p=PLACES[idx];
+    if(p._exact) continue;                       // already have an exact (cached) point
+    try{
+      const q=p.query.replace(/,?\s*Athens\s*$/i,'')+', Athens, Greece';
+      const url='https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q);
+      const r=await fetch(url,{headers:{'Accept':'application/json'}});
+      if(r.ok){ const j=await r.json();
+        if(j&&j[0]){ const ll={lat:+j[0].lat,lng:+j[0].lon};
+          cacheSet('ath_xy_'+p.query,ll);
+          p._ll=ll; p._exact=true; p._dist=haversine(BASE,ll);
+          if(p._marker) p._marker.setLatLng([ll.lat,ll.lng]);
+          if(els[idx]) els[idx].innerHTML=cardHTML(p,idx);
+        }
+      }
+    }catch(e){/* offline / blocked → keep the neighbourhood pin */}
+    await new Promise(r=>setTimeout(r,1200));    // be polite to the free OSM geocoder (≤1/sec)
   }
-}
-// Make sure we have a location fix, then run cb (used by “route from my location”)
-function ensureLocation(cb){
-  if(userMarker){ cb && cb(); return; }
-  if(!navigator.geolocation){ toast('Your browser can’t share your location.'); return; }
-  pendingLoc = cb || null;
-  startLocate();
-}
-function stopLocate(){
-  following=false; $('#locateBtn').classList.remove('on');
-  if(watchId!=null){ navigator.geolocation.clearWatch(watchId); watchId=null; }
-  if(userMarker){ userMarker.setMap(null); userMarker=null; }       // remove the stale blue dot
-  if(accCircle){ accCircle.setMap(null); accCircle=null; }
-}
-function updateUser(pos, follow){
-  const ll={lat:pos.coords.latitude, lng:pos.coords.longitude}, acc=pos.coords.accuracy||40;
-  if(!userMarker){
-    userMarker=new Marker({map,position:ll,zIndex:99999,title:'You are here',
-      icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:'#1a73e8',fillOpacity:1,strokeColor:'#fff',strokeWeight:3}});
-    accCircle=new Circle({map,center:ll,radius:acc,strokeColor:'#1a73e8',strokeOpacity:.4,strokeWeight:1,fillColor:'#1a73e8',fillOpacity:.12});
-    if(pendingLoc){ const cb=pendingLoc; pendingLoc=null; cb(); }     // resolve a “route from me” that was waiting on GPS
-  } else { userMarker.setPosition(ll); accCircle.setCenter(ll); accCircle.setRadius(acc); }
-  if(follow && following) map.panTo(ll);
-}
-function onGeoErr(err){ stopLocate();
-  if(pendingLoc){ pendingLoc=null;                                   // a “route from me” was waiting → fall back to the apartment
-    if(routeMode && routeDest && routeDest.homeRoute){ const panel=$('#routePanel'); if(panel) panel.innerHTML=`<div class="routenote">Could not get your location. Open the walk in Google Maps instead.</div><a class="routego" href="${routeDest.gmapsUrl}" target="_blank" rel="noopener">🧭 Open in Google Maps</a>`; return; }
-    if(routeMode){ routeOrigin='base'; syncOriginToggle(); drawRoute(); toast('Couldn’t get your location — showing the route from your apartment.'); return; }
-  }
-  if(err.code===1) toast('Location blocked. Allow location for this site to see your dot.');
-  else if(location.protocol==='file:') toast('Live location needs the hosted https:// link, not the local file.');
-  else toast('Couldn’t get your location — try again outdoors.');
+  applyFilters();
 }
 
-/* ---------- Overlays ---------- */
-function showKeyOverlay(){
-  $('#overlayBox').innerHTML=`<h2>Almost ready — add your Google key</h2>
-    <p>The map and ratings need a free Google Maps key. Open <code>index.html</code> in a text editor and replace <code>YOUR_GOOGLE_MAPS_API_KEY</code> near the top with your key.</p>
-    <p>Step-by-step instructions (with the exact buttons to click and how to keep it free) are in the <b>SETUP.md</b> file next to this page.</p>
-    <p style="margin-top:14px"><button class="help" style="background:var(--sea);border:none" onclick="document.getElementById('overlay').classList.remove('show')">Got it</button></p>`;
-  $('#overlay').classList.add('show');
-}
-function showErrorOverlay(err){
-  $('#overlayBox').innerHTML=`<h2>Map couldn’t load</h2>
-    <p>Google rejected the request. Usually that means the key isn’t finished setting up. Check that in your Google Cloud account you have:</p>
-    <ol><li><b>Maps JavaScript API</b> turned on</li><li><b>Places API (New)</b> turned on</li><li>Billing enabled (free tier; we cap it)</li><li>The key’s website restriction allows this address</li></ol>
-    <p style="font-size:12px;color:#90a4b3">Technical detail: ${(err&&err.message)||err}</p>
-    <p><button class="help" style="background:var(--sea);border:none" onclick="document.getElementById('overlay').classList.remove('show')">Close</button></p>`;
-  $('#overlay').classList.add('show');
-}
-$('#overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') e.currentTarget.classList.remove('show'); });
-
-/* ---------- Subtle map styling ---------- */
-const MAP_STYLE=[
-  {featureType:'poi',elementType:'labels',stylers:[{visibility:'off'}]},
-  {featureType:'transit',elementType:'labels.icon',stylers:[{visibility:'off'}]},
-  {featureType:'poi.park',elementType:'geometry',stylers:[{color:'#dcefd9'}]},
-  {featureType:'water',elementType:'geometry',stylers:[{color:'#bfe3f2'}]},
-  {featureType:'road',elementType:'geometry',stylers:[{color:'#ffffff'}]},
-  {featureType:'landscape',elementType:'geometry',stylers:[{color:'#f4f1ea'}]},
-];
-
-window.addEventListener('DOMContentLoaded', init);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeDetail(); });
+window.addEventListener('load',init);
 </script>
 </body>
 </html>
